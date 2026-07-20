@@ -1,5 +1,6 @@
 using BerryExchange.Api.Accounts;
 using BerryExchange.Api.Infrastructure;
+using BerryExchange.Api.Listings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +51,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<ListingsService>();
+
 var app = builder.Build();
 
 // Force the lazy AddDbContext options delegate to run now, at startup, instead of on first
@@ -68,6 +71,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapAccountsEndpoints();
+app.MapListingsEndpoints();
 
 app.MapGet("/", () => "Hello World!");
 
