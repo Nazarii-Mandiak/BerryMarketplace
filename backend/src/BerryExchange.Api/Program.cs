@@ -19,13 +19,36 @@ builder.Services.AddDbContext<BerryExchangeDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 
+builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddIdentityCookies();
+
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.Password.RequiredLength = 8;
     })
     .AddRoles<IdentityRole<Guid>>()
-    .AddEntityFrameworkStores<BerryExchangeDbContext>();
+    .AddEntityFrameworkStores<BerryExchangeDbContext>()
+    .AddSignInManager();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "BerryExchange.Auth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.HttpOnly = true;
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -40,6 +63,11 @@ using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<BerryExchangeDbContext>();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapAccountsEndpoints();
 
 app.MapGet("/", () => "Hello World!");
 
