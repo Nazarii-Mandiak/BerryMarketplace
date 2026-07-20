@@ -1,0 +1,19 @@
+%% Berry Exchange — C4 Level 2: Containers
+graph TB
+    subgraph Client
+        Browser["React SPA<br/>(Buyer & Seller UI)"]
+    end
+    subgraph Edge
+        Proxy["Reverse Proxy (Caddy)<br/>TLS, static hosting, /api/* routing"]
+    end
+    subgraph Backend
+        API["ASP.NET Core Web API<br/>Berry Exchange"]
+    end
+    subgraph Data
+        DB[("PostgreSQL")]
+    end
+
+    Browser <-->|HTTPS| Proxy
+    Proxy -->|serves SPA bundle| Browser
+    Proxy -->|"/api/* reverse-proxied"| API
+    API -->|"EF Core / Npgsql"| DB

@@ -1,0 +1,31 @@
+%% Berry Exchange — supplementary: data model (ER diagram)
+erDiagram
+    USER ||--o{ LISTING : sells
+    USER ||--o{ RESERVATION : buys
+    LISTING ||--o{ RESERVATION : "reserved via"
+
+    USER {
+        uuid id PK
+        string email
+        string display_name
+        string password_hash
+        timestamptz created_at
+    }
+    LISTING {
+        uuid id PK
+        uuid seller_id FK
+        string berry_type
+        string farm_name
+        decimal price_per_pint
+        int quantity_available
+        string note
+        timestamptz created_at
+    }
+    RESERVATION {
+        uuid id PK
+        uuid listing_id FK
+        uuid buyer_id FK
+        int quantity
+        string status
+        timestamptz reserved_at
+    }

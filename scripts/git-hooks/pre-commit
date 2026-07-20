@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Architecture-docs freshness gate — see docs/adr/0006-architecture-docs-freshness.md
+#
+# Blocks a commit that touches architecture-relevant files (per
+# architecture-paths.txt) unless a matching ADR (docs/adr/*.md) and a
+# matching diagram (docs/architecture/*.mmd) are staged too. This is a
+# heuristic, not a judge of necessity — deliberately bypass with
+# `git commit --no-verify` when a flagged change genuinely doesn't
+# warrant one or the other.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+patterns_file="$repo_root/scripts/git-hooks/architecture-paths.txt"
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACM)"
+[ -z "$staged_files" ] && exit 0
+
+matches_pattern() {
+  local file="$1"
+  while IFS= read -r pattern; do
+    [ -z "$pattern" ] && continue
+    case "$pattern" in
+      \#*) continue ;;
+    esac
+    # shellcheck disable=SC2053
+    case "$file" in
+      $pattern) return 0 ;;
+    esac
+  done < "$patterns_file"
+  return 1
+}
+
+arch_relevant_changed=false
+while IFS= read -r f; do
+  if matches_pattern "$f"; then
+    arch_relevant_changed=true
+    break
+  fi
+done <<< "$staged_files"
+
+$arch_relevant_changed || exit 0
+
+adr_touched=false
+diagram_touched=false
+while IFS= read -r f; do
+  case "$f" in
+    docs/adr/*.md) adr_touched=true ;;
+    docs/architecture/*.mmd) diagram_touched=true ;;
+  esac
+done <<< "$staged_files"
+
+problems=()
+$adr_touched || problems+=("no ADR staged under docs/adr/ — run the adr-update skill (or ask Claude to)")
+$diagram_touched || problems+=("no diagram staged under docs/architecture/ — run the architecture-diagram-update skill")
+
+if [ "${#problems[@]}" -gt 0 ]; then
+  echo "pre-commit: this change touches architecture-relevant files (matched in scripts/git-hooks/architecture-paths.txt):" >&2
+  for p in "${problems[@]}"; do
+    echo "  - $p" >&2
+  done
+  echo "  If this specific change genuinely needs neither, bypass with: git commit --no-verify" >&2
+  exit 1
+fi
+
+exit 0

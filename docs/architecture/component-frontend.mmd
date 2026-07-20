@@ -1,0 +1,20 @@
+%% Berry Exchange — C4 Level 3: Components inside the SPA container
+graph LR
+    subgraph SPA["React SPA"]
+        direction TB
+        Routes["Routes: /market /sell /reservations /login"]
+        subgraph Features
+            Market["Market feature<br/>listing grid, filters, search"]
+            Sell["Sell feature<br/>listing form"]
+            Reservations["Reservations feature<br/>buy action, my reservations"]
+            Auth["Auth feature<br/>login/register"]
+        end
+        ApiClient["API client layer<br/>(TanStack Query + fetch wrapper)"]
+        UI["Shared UI kit<br/>(design tokens from index.html: colors, buttons, chips, cards)"]
+    end
+    API[("Berry Exchange API")]
+
+    Routes --> Features
+    Features --> ApiClient
+    Features --> UI
+    ApiClient -->|"HTTPS JSON"| API

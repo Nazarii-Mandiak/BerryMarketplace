@@ -1,0 +1,8 @@
+%% Berry Exchange — C4 Level 1: System Context
+graph TB
+    Buyer["Buyer<br/>(person)"]
+    Seller["Seller<br/>(person)"]
+    System["Berry Exchange<br/>(software system)<br/>Lets growers list berries<br/>and buyers reserve a pint"]
+
+    Buyer -->|"Browses listings, reserves a pint"| System
+    Seller -->|"Posts listings, tracks stock"| System

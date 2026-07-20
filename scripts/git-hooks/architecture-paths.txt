@@ -1,0 +1,15 @@
+# Glob patterns (matched against staged file paths) that indicate an
+# architecture-relevant change — new dependencies, DI/module wiring,
+# infra config, or schema migrations. Tune this list as the real solution
+# structure lands; it's intentionally generic until src/ exists.
+#
+# Lines starting with # are comments. One glob per line.
+*.csproj
+package.json
+Program.cs
+Startup.cs
+docker-compose*.yml
+docker-compose*.yaml
+Dockerfile*
+appsettings*.json
+**/Migrations/*.cs

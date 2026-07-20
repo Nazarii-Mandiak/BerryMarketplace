@@ -1,0 +1,23 @@
+%% Berry Exchange — C4 Level 3: Components inside the API container
+graph LR
+    subgraph API["ASP.NET Core Web API"]
+        direction TB
+        Endpoints["Minimal API endpoints<br/>(Listings, Reservations, Accounts)"]
+        subgraph App["Application layer"]
+            ListingsSvc[ListingsService]
+            ResSvc[ReservationsService]
+            AccountsSvc["AccountsService (wraps Identity)"]
+        end
+        subgraph Domain["Domain"]
+            ListingEntity[Listing]
+            ReservationEntity[Reservation]
+            UserEntity[User]
+        end
+        Infra["Infrastructure<br/>EF Core DbContext, Identity stores, Migrations"]
+    end
+    DB[("PostgreSQL")]
+
+    Endpoints --> App
+    App --> Domain
+    App --> Infra
+    Infra --> DB

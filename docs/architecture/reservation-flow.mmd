@@ -1,0 +1,17 @@
+%% Berry Exchange — supplementary: "buy a pint" reservation flow (concurrency-critical)
+sequenceDiagram
+    participant Buyer as Buyer (Browser)
+    participant API as Reservations API
+    participant DB as PostgreSQL
+
+    Buyer->>API: POST /api/listings/{id}/reservations
+    API->>DB: UPDATE listings SET qty = qty - 1 WHERE id = :id AND qty > 0
+    alt 1 row updated
+        DB-->>API: OK
+        API->>DB: INSERT reservation (status = Pending)
+        DB-->>API: reservation created
+        API-->>Buyer: 201 Created
+    else 0 rows updated
+        DB-->>API: no match
+        API-->>Buyer: 409 Conflict "Sold out"
+    end
