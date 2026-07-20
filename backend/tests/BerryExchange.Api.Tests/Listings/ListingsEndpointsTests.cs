@@ -103,4 +103,25 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
         var created = await response.Content.ReadFromJsonAsync<ListingResponse>();
         Assert.Equal(new string('A', 40), created!.BerryType);
     }
+
+    [Fact]
+    public async Task Create_with_note_that_only_fits_after_trimming_succeeds_with_the_trimmed_value()
+    {
+        var client = _fixture.CreateClient();
+        await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "listings-padded-note@example.com", Password: "Password123!", DisplayName: "Padded Note Seller"));
+
+        // 2 leading spaces + 80 'N' characters = 82 raw characters, but trims to exactly 80.
+        // Note must follow the same trim-once-and-reuse pattern as BerryType/FarmName: this is
+        // legitimate input (80 chars fits the character varying(80) column exactly after
+        // trimming) and must succeed - not be incorrectly rejected as too long based on the
+        // raw, untrimmed length.
+        var paddedNote = "  " + new string('N', 80);
+        var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerPint: 5.2m, QuantityAvailable: 10, Note: paddedNote));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<ListingResponse>();
+        Assert.Equal(new string('N', 80), created!.Note);
+    }
 }

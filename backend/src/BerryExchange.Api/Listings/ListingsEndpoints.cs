@@ -23,11 +23,14 @@ public static class ListingsEndpoints
             // Trim once, up front, and use this same trimmed value both for length
             // validation and for what gets persisted. Validating a trimmed length while
             // saving the untrimmed original would let padded-whitespace input slip past
-            // the check and still overflow the HasMaxLength(40) column at SaveChangesAsync.
+            // the check and still overflow the HasMaxLength(40)/(80) columns at
+            // SaveChangesAsync. Note has no "is required" check, so it stays null when
+            // not provided rather than falling back to string.Empty like BerryType/FarmName.
             var normalized = request with
             {
                 BerryType = request.BerryType?.Trim() ?? string.Empty,
-                FarmName = request.FarmName?.Trim() ?? string.Empty
+                FarmName = request.FarmName?.Trim() ?? string.Empty,
+                Note = request.Note?.Trim()
             };
 
             var errors = ValidateCreateRequest(normalized);
