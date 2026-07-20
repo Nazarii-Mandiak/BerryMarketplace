@@ -1,0 +1,739 @@
+<title>Berrow — Farm Stand</title>
+<style>
+  :root {
+    --ground: #f7f3ec;
+    --ground-2: #ecd9d3;
+    --panel: #ffffff;
+    --ink: #171310;
+    --ink-muted: #7a7168;
+    --accent: #c4293f;
+    --accent-ink: #ffffff;
+    --leaf: #3f5b3c;
+    --line: rgba(23, 19, 16, 0.14);
+    --line-strong: rgba(23, 19, 16, 0.5);
+    --shadow: 0 10px 30px rgba(23, 19, 16, 0.08);
+    --font-display: "Helvetica Neue", "Neue Haas Grotesk Display Pro", Arial, sans-serif;
+    --font-body: "Neue Haas Grotesk Text Pro", "Helvetica Neue", Arial, sans-serif;
+    --font-accent: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #15120d;
+      --ground-2: #2c1f22;
+      --panel: #1e1a15;
+      --ink: #f5efe4;
+      --ink-muted: #b4a996;
+      --accent: #ff7d8f;
+      --accent-ink: #1a1310;
+      --leaf: #8fb386;
+      --line: rgba(245, 239, 228, 0.14);
+      --line-strong: rgba(245, 239, 228, 0.45);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #15120d; --ground-2: #2c1f22; --panel: #1e1a15; --ink: #f5efe4; --ink-muted: #b4a996;
+    --accent: #ff7d8f; --accent-ink: #1a1310; --leaf: #8fb386;
+    --line: rgba(245, 239, 228, 0.14); --line-strong: rgba(245, 239, 228, 0.45); --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+  :root[data-theme="light"] {
+    --ground: #f7f3ec; --ground-2: #ecd9d3; --panel: #ffffff; --ink: #171310; --ink-muted: #7a7168;
+    --accent: #c4293f; --accent-ink: #ffffff; --leaf: #3f5b3c;
+    --line: rgba(23, 19, 16, 0.14); --line-strong: rgba(23, 19, 16, 0.5); --shadow: 0 10px 30px rgba(23, 19, 16, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  button, input { font-family: inherit; font-size: inherit; color: inherit; }
+  svg { display: block; }
+
+  /* header */
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 24px 28px;
+    gap: 20px;
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+  }
+  .site-nav { display: flex; gap: 10px; }
+  .site-nav a {
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--ink);
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+  }
+  .site-nav a:hover, .site-nav a:focus-visible { background: var(--ink); color: var(--ground); }
+  .basket {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    padding: 9px 18px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .basket b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  @media (max-width: 780px) { .site-nav { display: none; } }
+
+  /* hero */
+  .hero {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 30px 28px 46px;
+    display: grid;
+    grid-template-columns: 1fr 0.85fr;
+    gap: 40px;
+    align-items: end;
+  }
+  .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+    margin: 0 0 16px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before { content: "/"; color: var(--accent); font-weight: 800; }
+  .hero h1 {
+    font-size: clamp(38px, 5.4vw, 68px);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+  }
+  .hero-copy-right { padding-bottom: 6px; }
+  .hero .lede { color: var(--ink-muted); font-size: 17px; max-width: 42ch; margin: 0 0 24px; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 14.5px;
+    padding: 14px 26px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+  .btn-primary { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+  .btn-primary:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-ghost { background: transparent; }
+  .btn-ghost:hover { background: var(--ink); color: var(--ground); }
+  .btn:active { transform: scale(0.97); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* full-bleed banner */
+  .harvest-banner {
+    position: relative;
+    background: var(--ground-2);
+    padding: 34px 0 26px;
+    overflow: hidden;
+  }
+  .harvest-row {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .harvest-row .berry-icon { flex: 0 1 130px; }
+  .harvest-row .berry-icon:nth-child(1) { transform: rotate(-6deg) translateY(6px); }
+  .harvest-row .berry-icon:nth-child(2) { flex-basis: 100px; transform: translateY(-10px); }
+  .harvest-row .berry-icon:nth-child(3) { flex-basis: 150px; transform: rotate(4deg); }
+  .harvest-row .berry-icon:nth-child(4) { flex-basis: 95px; transform: rotate(-4deg) translateY(4px); }
+  .harvest-row .berry-icon:nth-child(5) { flex-basis: 120px; transform: rotate(7deg) translateY(-6px); }
+  .harvest-row .berry-icon:nth-child(6) { display: none; }
+  .harvest-tag {
+    position: absolute;
+    left: 28px;
+    top: 34px;
+    background: var(--ink);
+    color: var(--ground);
+    font-weight: 700;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 8px 16px;
+    border-radius: 999px;
+    z-index: 2;
+  }
+  @media (max-width: 780px) {
+    .hero { grid-template-columns: 1fr; align-items: start; }
+    .harvest-row .berry-icon:nth-child(5) { display: none; }
+    .harvest-row .berry-icon { flex-basis: 80px !important; }
+  }
+
+  /* market */
+  .market { max-width: 1180px; margin: 0 auto; padding: 44px 28px 20px; }
+  .market-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .market-head h2 { font-size: 30px; font-weight: 800; letter-spacing: -0.01em; }
+  .market-head .status { font-size: 13px; color: var(--leaf); font-weight: 700; }
+  .market-head .status::before { content: "● "; }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  #chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-weight: 700;
+    font-size: 13px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #searchInput {
+    background: var(--panel);
+    border: 2px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 9px 18px;
+    min-width: 220px;
+    color: var(--ink);
+    margin-left: auto;
+  }
+  #searchInput::placeholder { color: var(--ink-muted); }
+  #searchInput:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  @media (max-width: 640px) { #searchInput { margin-left: 0; width: 100%; } }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 22px;
+    padding-bottom: 10px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow);
+  }
+  .card .art {
+    position: relative;
+    background: var(--ground-2);
+    height: 152px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card .art .berry-icon { width: 96px; height: 96px; }
+  .card .price-tag {
+    position: absolute;
+    right: 12px;
+    bottom: -14px;
+    background: var(--ink);
+    color: var(--ground);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 7px 12px;
+    border-radius: 999px;
+  }
+  .card-body { padding: 24px 20px 20px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+  .card h3 { font-size: 20px; font-weight: 800; }
+  .card .farm { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 700; }
+  .card .seller { font-size: 13px; color: var(--ink-muted); }
+  .card .note { font-family: var(--font-accent); font-style: italic; font-size: 14.5px; color: var(--ink-muted); flex-grow: 1; margin: 2px 0 0; }
+  .card .qty { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+  .card .qty.low { color: var(--accent); font-weight: 700; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+  .btn-buy {
+    font-weight: 700;
+    font-size: 13px;
+    background: var(--ink);
+    border: 2px solid var(--ink);
+    color: var(--ground);
+    padding: 9px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .btn-buy:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-buy:disabled {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--ink-muted);
+    cursor: not-allowed;
+  }
+  .btn-buy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .empty-state { color: var(--ink-muted); padding: 30px 0; grid-column: 1 / -1; }
+
+  /* sell */
+  .sell { max-width: 1180px; margin: 0 auto; padding: 50px 28px 80px; }
+  .sell-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    border-radius: 20px;
+    padding: 36px clamp(24px, 5vw, 56px);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .sell-card > p { color: var(--ink-muted); margin: 8px 0 26px; }
+  .sell-card h2 { font-size: 26px; font-weight: 800; }
+  .field { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+  input[type="text"], input[type="number"], input:not([type]) {
+    border: 2px solid var(--line-strong);
+    border-radius: 12px;
+    background: var(--ground);
+    padding: 10px 14px;
+    color: var(--ink);
+  }
+  input:focus-visible { outline: none; border-color: var(--accent); }
+  .sell-card .btn-primary { margin-top: 8px; width: 100%; text-align: center; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 26px 28px 44px;
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+
+  .toast {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    background: var(--ink);
+    color: var(--ground);
+    padding: 13px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 999px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn, .toast, .btn-buy { transition: none; }
+  }
+
+  @media (max-width: 640px) {
+    .row-2 { grid-template-columns: 1fr; }
+  }
+</style>
+
+<header class="site-header">
+  <div class="wordmark">Berrow</div>
+  <nav class="site-nav">
+    <a href="#market">The Market</a>
+    <a href="#sell">Sell Berries</a>
+  </nav>
+  <div class="basket">Basket <b id="basketCount">0</b></div>
+</header>
+
+<section class="hero">
+  <div class="hero-copy-left">
+    <p class="eyebrow">Sunrow Valley</p>
+    <h1>Berries, straight from the row.</h1>
+  </div>
+  <div class="hero-copy-right">
+    <p class="lede">Berrow connects backyard growers and small orchards directly with buyers nearby — no middleman, no cold-chain trucking, just crates changing hands the same day they're picked.</p>
+    <div class="hero-actions">
+      <a href="#market" class="btn btn-primary">Browse the market</a>
+      <a href="#sell" class="btn btn-ghost">List your berries</a>
+    </div>
+  </div>
+</section>
+
+<div class="harvest-banner">
+  <span class="harvest-tag">Today's harvest</span>
+  <div class="harvest-row" id="harvestRow"></div>
+</div>
+
+<section id="market" class="market">
+  <div class="market-head">
+    <h2>The Market</h2>
+    <span class="status">Fresh listings updated live</span>
+  </div>
+  <div class="filter-row">
+    <div id="chips"></div>
+    <input id="searchInput" type="search" placeholder="Search sellers, farms…" aria-label="Search listings" />
+  </div>
+  <div id="grid" class="grid"></div>
+</section>
+
+<section id="sell" class="sell">
+  <div class="sell-card">
+    <h2>List your berries</h2>
+    <p>Got a surplus from the garden or the orchard? Post a crate and Berrow lists it on the market instantly.</p>
+    <form id="sellForm">
+      <div class="field">
+        <label for="f-name">Berry</label>
+        <input id="f-name" required maxlength="40" placeholder="e.g. Tayberries" />
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label for="f-seller">Your name</label>
+          <input id="f-seller" required maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="f-farm">Farm or garden</label>
+          <input id="f-farm" required maxlength="40" />
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label for="f-price">Price per pint ($)</label>
+          <input id="f-price" type="number" min="0.10" step="0.05" required />
+        </div>
+        <div class="field">
+          <label for="f-qty">Pints available</label>
+          <input id="f-qty" type="number" min="1" step="1" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-note">Note (optional)</label>
+        <input id="f-note" maxlength="80" placeholder="Sweet, a little tart, best by Friday" />
+      </div>
+      <button type="submit" class="btn btn-primary">Post listing</button>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <span>Berrow — a farm stand for the whole valley</span>
+  <span id="year"></span>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var STORAGE_KEY = 'berrow.orchard.listings.v1';
+  var BASKET_KEY = 'berrow.orchard.basket.v1';
+
+  document.getElementById('year').textContent = 'Est. ' + new Date().getFullYear();
+
+  var seed = [
+    { id: 's1', name: 'Strawberries', seller: 'Everly Hart', farm: 'Sunrow Farm', price: 6.40, qty: 18, note: 'Sweet, sun-warmed, picked at dawn.' },
+    { id: 's2', name: 'Blueberries', seller: 'Mateo Reyes', farm: 'Blue Hollow Orchard', price: 5.20, qty: 24, note: 'Plump and low-acid, great for baking.' },
+    { id: 's3', name: 'Raspberries', seller: 'Priya Nandan', farm: 'Thistlewood Farm', price: 7.80, qty: 9, note: 'Delicate — best eaten within two days.' },
+    { id: 's4', name: 'Blackberries', seller: 'Owen Castile', farm: 'Bramble & Co', price: 6.90, qty: 14, note: 'Deep, wine-dark, a little tart.' },
+    { id: 's5', name: 'Gooseberries', seller: 'Sana Vireo', farm: 'Old Stone Orchard', price: 8.50, qty: 6, note: 'Tart — good for jam and pies.' },
+    { id: 's6', name: 'Mulberries', seller: 'Delia Fontan', farm: 'Fontan Family Grove', price: 9.10, qty: 4, note: 'Short season — first come, first served.' }
+  ];
+
+  /* ---------- berry icon library (self-contained SVG, no external assets) ---------- */
+  var LEAF = '#3f5b3c';
+  var INK = 'var(--ink)';
+
+  function svgWrap(inner) {
+    return '<svg class="berry-icon" viewBox="0 0 200 200" role="img" aria-hidden="true">' + inner + '</svg>';
+  }
+  function calyx(cx, cy, fill) {
+    var g = '<g transform="translate(' + cx + ',' + cy + ')">';
+    [-40, -20, 0, 20, 40].forEach(function (deg) {
+      var ry = deg === 0 ? 18 : 16;
+      g += '<ellipse cx="0" cy="-7" rx="6.5" ry="' + ry + '" fill="' + fill + '" stroke="' + INK + '" stroke-width="4" transform="rotate(' + deg + ')"/>';
+    });
+    return g + '</g>';
+  }
+  function drupelets(fill) {
+    var rows = [
+      { y: 90, xs: [78, 100, 122] },
+      { y: 111, xs: [64, 87, 110, 133] },
+      { y: 132, xs: [72, 95, 118, 140] },
+      { y: 151, xs: [84, 107, 129] }
+    ];
+    var out = '';
+    rows.forEach(function (row) {
+      row.xs.forEach(function (x) {
+        out += '<circle cx="' + x + '" cy="' + row.y + '" r="13" fill="' + fill + '" stroke="' + INK + '" stroke-width="2"/>';
+      });
+    });
+    return out;
+  }
+  function baseLeaf(x, y) {
+    return '<path d="M ' + x + ' ' + y + ' C ' + (x - 16) + ' ' + (y - 4) + ' ' + (x - 20) + ' ' + (y - 18) + ' ' + (x - 10) + ' ' + (y - 28) +
+      ' C ' + (x - 1) + ' ' + (y - 16) + ' ' + (x - 2) + ' ' + (y - 4) + ' ' + x + ' ' + y + ' Z" fill="' + LEAF + '" stroke="' + INK + '" stroke-width="4"/>';
+  }
+
+  var ICONS = {
+    strawberries: function () {
+      var seeds = [[78, 90, -10], [104, 82, 15], [128, 98, -20], [70, 118, 5], [96, 112, -5], [122, 124, 20], [82, 146, -15], [108, 150, 10], [60, 96, 25], [138, 118, -8]];
+      var s = seeds.map(function (p) {
+        return '<ellipse cx="' + p[0] + '" cy="' + p[1] + '" rx="4.5" ry="7" fill="#f5d77a" transform="rotate(' + p[2] + ' ' + p[0] + ' ' + p[1] + ')"/>';
+      }).join('');
+      return svgWrap(
+        '<path d="M100,56 C132,50 162,76 158,108 C154,144 128,178 100,178 C72,178 46,144 42,108 C38,76 68,50 100,56 Z" fill="#e5384f" stroke="' + INK + '" stroke-width="6"/>' +
+        s + calyx(100, 52, LEAF)
+      );
+    },
+    blueberries: function () {
+      return svgWrap(
+        '<circle cx="100" cy="112" r="56" fill="#4c5fa8" stroke="' + INK + '" stroke-width="6"/>' +
+        '<ellipse cx="78" cy="90" rx="16" ry="10" fill="#ffffff" opacity="0.35" transform="rotate(-20 78 90)"/>' +
+        '<path d="M100,60 L94,47 M100,60 L100,44 M100,60 L106,47 M100,60 L90,54 M100,60 L110,54" stroke="#22284a" stroke-width="4" stroke-linecap="round" fill="none"/>' +
+        '<line x1="100" y1="44" x2="100" y2="32" stroke="' + LEAF + '" stroke-width="5" stroke-linecap="round"/>'
+      );
+    },
+    raspberries: function () {
+      return svgWrap(
+        '<path d="M60,150 C55,98 70,58 100,56 C130,58 145,98 140,150 C140,169 120,180 100,180 C80,180 60,169 60,150 Z" fill="#e8637a" stroke="' + INK + '" stroke-width="6"/>' +
+        drupelets('#f3a6b4') + baseLeaf(52, 158)
+      );
+    },
+    blackberries: function () {
+      return svgWrap(
+        '<path d="M60,150 C55,98 70,58 100,56 C130,58 145,98 140,150 C140,169 120,180 100,180 C80,180 60,169 60,150 Z" fill="#3b2740" stroke="' + INK + '" stroke-width="6"/>' +
+        drupelets('#5c4066') + baseLeaf(52, 158)
+      );
+    },
+    gooseberries: function () {
+      return svgWrap(
+        '<ellipse cx="100" cy="112" rx="54" ry="60" fill="#cfe29a" fill-opacity="0.65" stroke="' + INK + '" stroke-width="6"/>' +
+        '<path d="M72,72 C87,98 87,132 72,158" fill="none" stroke="#8fae55" stroke-width="2.5"/>' +
+        '<path d="M100,62 C105,98 105,132 100,166" fill="none" stroke="#8fae55" stroke-width="2.5"/>' +
+        '<path d="M128,72 C113,98 113,132 128,158" fill="none" stroke="#8fae55" stroke-width="2.5"/>' +
+        '<ellipse cx="82" cy="86" rx="14" ry="9" fill="#ffffff" opacity="0.4" transform="rotate(-25 82 86)"/>' +
+        '<line x1="100" y1="52" x2="100" y2="38" stroke="' + LEAF + '" stroke-width="5" stroke-linecap="round"/>'
+      );
+    },
+    mulberries: function () {
+      return svgWrap(
+        '<g transform="translate(100,116) scale(0.85,1.12) translate(-100,-116)">' +
+        '<path d="M60,150 C55,98 70,58 100,56 C130,58 145,98 140,150 C140,169 120,180 100,180 C80,180 60,169 60,150 Z" fill="#4a1e38" stroke="' + INK + '" stroke-width="6"/>' +
+        drupelets('#7a3a5c') +
+        '</g>' + baseLeaf(58, 62)
+      );
+    }
+  };
+  function genericIcon() {
+    return svgWrap(
+      '<circle cx="100" cy="112" r="56" fill="var(--accent)" stroke="' + INK + '" stroke-width="6"/>' +
+      '<ellipse cx="78" cy="90" rx="16" ry="10" fill="#ffffff" opacity="0.3" transform="rotate(-20 78 90)"/>' +
+      '<line x1="100" y1="56" x2="100" y2="40" stroke="' + LEAF + '" stroke-width="5" stroke-linecap="round"/>' +
+      '<ellipse cx="110" cy="42" rx="11" ry="6" fill="' + LEAF + '" stroke="' + INK + '" stroke-width="3" transform="rotate(25 110 42)"/>'
+    );
+  }
+  function iconFor(name) {
+    var key = String(name || '').toLowerCase();
+    for (var k in ICONS) {
+      if (key.indexOf(k.slice(0, -3)) > -1) return ICONS[k]();
+    }
+    return genericIcon();
+  }
+
+  function loadListings() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    saveListings(seed);
+    return seed.slice();
+  }
+  function saveListings(list) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function loadBasket() {
+    var n = parseInt(localStorage.getItem(BASKET_KEY) || '0', 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function saveBasket(n) {
+    try { localStorage.setItem(BASKET_KEY, String(n)); } catch (e) {}
+    document.getElementById('basketCount').textContent = String(n);
+  }
+
+  var listings = loadListings();
+  var basketCount = loadBasket();
+  var activeType = 'all';
+  document.getElementById('basketCount').textContent = String(basketCount);
+
+  function fmt(n) { return '$' + Number(n).toFixed(2); }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function renderHarvestBanner() {
+    var order = ['Strawberries', 'Blueberries', 'Raspberries', 'Blackberries', 'Gooseberries'];
+    var row = document.getElementById('harvestRow');
+    row.innerHTML = order.map(function (n) {
+      return iconFor(n);
+    }).join('');
+  }
+
+  function uniqueTypes() {
+    var seen = {};
+    var out = [];
+    listings.forEach(function (l) {
+      if (!seen[l.name]) { seen[l.name] = true; out.push(l.name); }
+    });
+    return out;
+  }
+
+  function renderChips() {
+    var el = document.getElementById('chips');
+    var types = ['All'].concat(uniqueTypes());
+    el.innerHTML = types.map(function (t) {
+      var isActive = (t === 'All' && activeType === 'all') || t === activeType;
+      return '<button type="button" class="chip' + (isActive ? ' active' : '') + '" data-type="' + escapeHtml(t === 'All' ? 'all' : t) + '">' + escapeHtml(t) + '</button>';
+    }).join('');
+  }
+
+  function renderGrid(filterText) {
+    var grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    var items = listings;
+    if (activeType !== 'all') {
+      items = items.filter(function (l) { return l.name === activeType; });
+    }
+    if (filterText) {
+      var f = filterText.toLowerCase();
+      items = items.filter(function (l) {
+        return l.name.toLowerCase().indexOf(f) > -1 ||
+               l.seller.toLowerCase().indexOf(f) > -1 ||
+               l.farm.toLowerCase().indexOf(f) > -1;
+      });
+    }
+    if (!items.length) {
+      grid.innerHTML = '<p class="empty-state">No crates match that search.</p>';
+      return;
+    }
+    items.forEach(function (l) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      var low = l.qty > 0 && l.qty <= 5;
+      var soldOut = l.qty <= 0;
+      card.innerHTML =
+        '<div class="art">' + iconFor(l.name) + '<span class="price-tag">' + fmt(l.price) + '/pt</span></div>' +
+        '<div class="card-body">' +
+          '<h3>' + escapeHtml(l.name) + '</h3>' +
+          '<span class="farm">' + escapeHtml(l.farm) + '</span>' +
+          '<span class="seller">Listed by ' + escapeHtml(l.seller) + '</span>' +
+          '<p class="note">' + escapeHtml(l.note || '') + '</p>' +
+          '<div class="card-foot">' +
+            '<span class="qty' + (low ? ' low' : '') + '">' + (soldOut ? 'Sold out' : l.qty + ' pt' + (l.qty === 1 ? '' : 's') + ' left') + '</span>' +
+            '<button class="btn-buy" data-id="' + l.id + '"' + (soldOut ? ' disabled' : '') + '>' + (soldOut ? 'Sold out' : 'Buy a pint') + '</button>' +
+          '</div>' +
+        '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+
+  document.getElementById('grid').addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-buy');
+    if (!btn || btn.disabled) return;
+    var id = btn.getAttribute('data-id');
+    var l = listings.find(function (x) { return x.id === id; });
+    if (!l || l.qty <= 0) return;
+    l.qty -= 1;
+    saveListings(listings);
+    basketCount += 1;
+    saveBasket(basketCount);
+    renderGrid(document.getElementById('searchInput').value);
+    showToast('Added a pint of ' + l.name.toLowerCase() + ' to your basket.');
+  });
+
+  document.getElementById('chips').addEventListener('click', function (e) {
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    activeType = chip.getAttribute('data-type');
+    renderChips();
+    renderGrid(document.getElementById('searchInput').value);
+  });
+
+  document.getElementById('searchInput').addEventListener('input', function (e) {
+    renderGrid(e.target.value);
+  });
+
+  document.getElementById('sellForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = document.getElementById('f-name').value.trim();
+    var seller = document.getElementById('f-seller').value.trim();
+    var farm = document.getElementById('f-farm').value.trim();
+    var price = parseFloat(document.getElementById('f-price').value);
+    var qty = parseInt(document.getElementById('f-qty').value, 10);
+    var note = document.getElementById('f-note').value.trim();
+    if (!name || !seller || !farm || !(price > 0) || !(qty > 0)) return;
+    var listing = {
+      id: 'u' + Date.now(),
+      name: name, seller: seller, farm: farm,
+      price: price, qty: qty, note: note
+    };
+    listings.unshift(listing);
+    saveListings(listings);
+    renderChips();
+    renderGrid(document.getElementById('searchInput').value);
+    e.target.reset();
+    showToast('Listing posted — ' + name + ' is on the market.');
+    document.getElementById('market').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  renderHarvestBanner();
+  renderChips();
+  renderGrid('');
+})();
+</script>
