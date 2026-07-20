@@ -20,14 +20,24 @@ public static class ListingsEndpoints
 
         group.MapPost("/", async (CreateListingRequest request, HttpContext http, ListingsService service, CancellationToken ct) =>
         {
-            var errors = ValidateCreateRequest(request);
+            // Trim once, up front, and use this same trimmed value both for length
+            // validation and for what gets persisted. Validating a trimmed length while
+            // saving the untrimmed original would let padded-whitespace input slip past
+            // the check and still overflow the HasMaxLength(40) column at SaveChangesAsync.
+            var normalized = request with
+            {
+                BerryType = request.BerryType?.Trim() ?? string.Empty,
+                FarmName = request.FarmName?.Trim() ?? string.Empty
+            };
+
+            var errors = ValidateCreateRequest(normalized);
             if (errors.Count > 0)
             {
                 return Results.BadRequest(new { errors });
             }
 
             var sellerId = Guid.Parse(http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var listing = await service.CreateAsync(sellerId, request, ct);
+            var listing = await service.CreateAsync(sellerId, normalized, ct);
             return Results.Created($"/api/listings/{listing.Id}", ListingResponse.FromEntity(listing));
         }).RequireAuthorization();
     }
@@ -40,7 +50,7 @@ public static class ListingsEndpoints
         {
             errors.Add("BerryType is required.");
         }
-        else if (request.BerryType.Trim().Length > 40)
+        else if (request.BerryType.Length > 40)
         {
             errors.Add("BerryType must be 40 characters or fewer.");
         }
@@ -49,7 +59,7 @@ public static class ListingsEndpoints
         {
             errors.Add("FarmName is required.");
         }
-        else if (request.FarmName.Trim().Length > 40)
+        else if (request.FarmName.Length > 40)
         {
             errors.Add("FarmName must be 40 characters or fewer.");
         }

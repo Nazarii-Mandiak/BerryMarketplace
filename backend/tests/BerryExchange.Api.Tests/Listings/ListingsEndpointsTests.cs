@@ -80,4 +80,27 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Create_with_berry_type_that_only_fits_after_trimming_succeeds_with_the_trimmed_value()
+    {
+        var client = _fixture.CreateClient();
+        await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "listings-padded@example.com", Password: "Password123!", DisplayName: "Padded Seller"));
+
+        // 2 leading spaces + 40 'A' characters = 42 raw characters, but trims to exactly 40.
+        // Before the trim-consistency fix, validation checked the *trimmed* length (40, valid)
+        // while ListingsService persisted the *untrimmed* original (42 chars), overflowing the
+        // character varying(40) column and crashing with an unhandled DbUpdateException (500).
+        // Now that BerryType/FarmName are trimmed once and that same value is used both for the
+        // length check and for what gets stored, this is legitimate input (40 chars fits exactly)
+        // and must succeed - not be rejected - storing the trimmed value.
+        var paddedBerryType = "  " + new string('A', 40);
+        var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
+            BerryType: paddedBerryType, FarmName: "Blue Hollow Orchard", PricePerPint: 5.2m, QuantityAvailable: 10, Note: null));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<ListingResponse>();
+        Assert.Equal(new string('A', 40), created!.BerryType);
+    }
 }
