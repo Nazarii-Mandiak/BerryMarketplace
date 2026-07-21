@@ -5,3 +5,7 @@ public record ReservationResponse(Guid Id, Guid ListingId, Guid BuyerId, int Qua
     public static ReservationResponse FromEntity(Reservation r) =>
         new(r.Id, r.ListingId, r.BuyerId, r.Quantity, r.Status.ToString(), r.ReservedAt);
 }
+
+public record ReservationWithListingResponse(
+    Guid Id, Guid ListingId, int Quantity, string Status, DateTimeOffset ReservedAt,
+    string BerryType, string FarmName, decimal PricePerPint);

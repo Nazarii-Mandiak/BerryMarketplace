@@ -22,6 +22,11 @@ public class ListingsService
         return await _db.Listings.FirstOrDefaultAsync(l => l.Id == id, ct);
     }
 
+    public async Task<List<Listing>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct)
+    {
+        return await _db.Listings.Where(l => ids.Contains(l.Id)).ToListAsync(ct);
+    }
+
     public async Task<Listing> CreateAsync(Guid sellerId, CreateListingRequest request, CancellationToken ct)
     {
         var listing = new Listing
