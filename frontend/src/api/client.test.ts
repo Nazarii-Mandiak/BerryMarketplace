@@ -23,11 +23,14 @@ describe('apiRequest', () => {
   });
 
   it('throws ApiError with parsed errors on a non-2xx JSON error body', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ errors: ['BerryType is required.'] }), { status: 400 }),
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ errors: ['BerryType is required.'] }), { status: 400 }),
+      ),
     );
     vi.stubGlobal('fetch', fetchMock);
 
+    await expect(apiRequest('/listings', { method: 'POST', body: '{}' })).rejects.toBeInstanceOf(ApiError);
     await expect(apiRequest('/listings', { method: 'POST', body: '{}' })).rejects.toMatchObject({
       status: 400,
       errors: ['BerryType is required.'],
