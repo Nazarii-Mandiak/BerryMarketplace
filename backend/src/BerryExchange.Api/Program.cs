@@ -76,8 +76,6 @@ app.MapAccountsEndpoints();
 app.MapListingsEndpoints();
 app.MapReservationsEndpoints();
 
-app.MapGet("/", () => "Hello World!");
-
 app.Run();
 
 public partial class Program { }

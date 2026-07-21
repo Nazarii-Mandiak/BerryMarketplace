@@ -82,6 +82,22 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
     }
 
     [Fact]
+    public async Task Create_with_price_exceeding_the_numeric_10_2_column_bound_returns_bad_request()
+    {
+        var client = _fixture.CreateClient();
+        await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "listings-hugeprice@example.com", Password: "Password123!", DisplayName: "Huge Price Seller"));
+
+        // The DB column is numeric(10,2), max ~99,999,999.99. Before this fix, a price at or
+        // above 100,000,000 sailed past validation and threw an unhandled Npgsql overflow
+        // exception (500) at SaveChangesAsync instead of a clean 400.
+        var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerPint: 100_000_000m, QuantityAvailable: 10, Note: null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Create_with_berry_type_that_only_fits_after_trimming_succeeds_with_the_trimmed_value()
     {
         var client = _fixture.CreateClient();

@@ -76,6 +76,13 @@ public static class ListingsEndpoints
         {
             errors.Add("PricePerPint must be greater than 0.");
         }
+        else if (request.PricePerPint >= 100_000_000)
+        {
+            // The DB column is numeric(10,2): max ~99,999,999.99. Anything at or above
+            // 100,000,000 overflows it and would otherwise throw an unhandled Npgsql
+            // exception (500) at SaveChangesAsync instead of a clean 400 here.
+            errors.Add("PricePerPint must be less than 100,000,000.");
+        }
 
         if (request.QuantityAvailable < 0)
         {

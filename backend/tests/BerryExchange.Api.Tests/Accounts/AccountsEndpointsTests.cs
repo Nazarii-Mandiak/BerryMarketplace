@@ -27,6 +27,14 @@ public class AccountsEndpointsTests : IClassFixture<ApiTestFixture>
 
         var me = await client.GetAsync("/api/accounts/me");
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+
+        // /me must return the same UserResponse shape as /register and /login - not an
+        // anonymous { id, email } object - so clients can deserialize all three identically.
+        var registered = await registerResponse.Content.ReadFromJsonAsync<UserResponse>();
+        var meBody = await me.Content.ReadFromJsonAsync<UserResponse>();
+        Assert.Equal(registered!.Id, meBody!.Id);
+        Assert.Equal("accounts-seller@example.com", meBody.Email);
+        Assert.Equal("Seller One", meBody.DisplayName);
     }
 
     [Fact]

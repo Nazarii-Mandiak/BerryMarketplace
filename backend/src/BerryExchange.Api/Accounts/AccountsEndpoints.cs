@@ -51,7 +51,7 @@ public static class AccountsEndpoints
             return Results.Ok();
         });
 
-        group.MapGet("/me", (HttpContext http) =>
+        group.MapGet("/me", async (HttpContext http, UserManager<ApplicationUser> userManager) =>
         {
             if (http.User.Identity?.IsAuthenticated != true)
             {
@@ -59,7 +59,12 @@ public static class AccountsEndpoints
             }
             var id = Guid.Parse(http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
             var email = http.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "";
-            return Results.Ok(new { id, email });
+            // DisplayName is a custom property on ApplicationUser, not a standard claim carried by
+            // the Identity cookie principal, so it can't be read from http.User claims like id/email
+            // are. Look the user up via UserManager to get it, matching /register and /login's shape.
+            var user = await userManager.FindByIdAsync(id.ToString());
+            var displayName = user?.DisplayName ?? "";
+            return Results.Ok(new UserResponse(id, email, displayName));
         }).RequireAuthorization();
     }
 }
