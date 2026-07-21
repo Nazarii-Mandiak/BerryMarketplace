@@ -1,0 +1,42 @@
+export class ApiError extends Error {
+  status: number;
+  errors: string[];
+
+  constructor(status: number, errors: string[]) {
+    super(errors.join(' '));
+    this.status = status;
+    this.errors = errors;
+  }
+}
+
+async function parseErrorBody(response: Response): Promise<string[]> {
+  try {
+    const body = await response.json();
+    if (Array.isArray(body?.errors)) return body.errors;
+    if (typeof body?.error === 'string') return [body.error];
+  } catch {
+    // no JSON body
+  }
+  return [response.statusText || `Request failed with status ${response.status}`];
+}
+
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`/api${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: {
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...init?.headers,
+    },
+  });
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await parseErrorBody(response));
+  }
+
+  return (await response.json()) as T;
+}
