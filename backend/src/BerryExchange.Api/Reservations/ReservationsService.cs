@@ -55,6 +55,14 @@ public class ReservationsService
 
         return ReserveResult.Success(reservation);
     }
+
+    public async Task<List<Reservation>> GetByBuyerAsync(Guid buyerId, CancellationToken ct)
+    {
+        return await _db.Reservations
+            .Where(r => r.BuyerId == buyerId)
+            .OrderByDescending(r => r.ReservedAt)
+            .ToListAsync(ct);
+    }
 }
 
 public class ReserveResult

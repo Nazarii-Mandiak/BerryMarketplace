@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using BerryExchange.Api.Accounts;
 using BerryExchange.Api.Listings;
+using BerryExchange.Api.Reservations;
 using Xunit;
 
 namespace BerryExchange.Api.Tests.Reservations;
@@ -69,5 +70,56 @@ public class ReservationsEndpointsTests : IClassFixture<ApiTestFixture>
         var response = await sellerClient.PostAsync($"/api/listings/{listing.Id}/reservations", null);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Mine_with_no_reservations_returns_empty_list()
+    {
+        var buyerClient = _fixture.CreateClient();
+        await buyerClient.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "res-mine-empty@example.com", Password: "Password123!", DisplayName: "Buyer"));
+
+        var response = await buyerClient.GetAsync("/api/reservations/mine");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var reservations = await response.Content.ReadFromJsonAsync<List<ReservationWithListingResponse>>();
+        Assert.Empty(reservations!);
+    }
+
+    [Fact]
+    public async Task Mine_returns_reservation_with_embedded_listing_details_and_only_the_callers_own()
+    {
+        var (listing, buyerClient) = await SeedListingAndBuyer(
+            "res-mine-seller@example.com", "res-mine-buyer@example.com", quantity: 3);
+        await buyerClient.PostAsync($"/api/listings/{listing.Id}/reservations", null);
+
+        var otherBuyerClient = _fixture.CreateClient();
+        await otherBuyerClient.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "res-mine-other-buyer@example.com", Password: "Password123!", DisplayName: "Other Buyer"));
+
+        var response = await buyerClient.GetAsync("/api/reservations/mine");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var reservations = await response.Content.ReadFromJsonAsync<List<ReservationWithListingResponse>>();
+        var reservation = Assert.Single(reservations!);
+        Assert.Equal(listing.Id, reservation.ListingId);
+        Assert.Equal("Gooseberries", reservation.BerryType);
+        Assert.Equal("Old Stone Orchard", reservation.FarmName);
+        Assert.Equal(8.5m, reservation.PricePerPint);
+        Assert.Equal("Pending", reservation.Status);
+
+        var otherResponse = await otherBuyerClient.GetAsync("/api/reservations/mine");
+        var otherReservations = await otherResponse.Content.ReadFromJsonAsync<List<ReservationWithListingResponse>>();
+        Assert.Empty(otherReservations!);
+    }
+
+    [Fact]
+    public async Task Mine_without_authentication_returns_unauthorized()
+    {
+        var anonymousClient = _fixture.CreateClient();
+
+        var response = await anonymousClient.GetAsync("/api/reservations/mine");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }
