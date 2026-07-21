@@ -1,0 +1,51 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { renderWithProviders } from '../../testUtils';
+import { SellPage } from './SellPage';
+import * as listingsApi from '../../api/listings';
+import { ApiError } from '../../api/client';
+
+vi.mock('../../api/listings');
+
+describe('SellPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows backend validation errors inline', async () => {
+    vi.mocked(listingsApi.createListing).mockRejectedValue(new ApiError(400, ['BerryType is required.']));
+    const user = userEvent.setup();
+
+    renderWithProviders(<SellPage />, { route: '/sell' });
+
+    await user.type(screen.getByLabelText('Farm or garden'), 'Sunrow Farm');
+    await user.type(screen.getByLabelText('Price per pint ($)'), '6.40');
+    await user.type(screen.getByLabelText('Pints available'), '10');
+    await user.click(screen.getByRole('button', { name: 'Post listing' }));
+
+    expect(await screen.findByText('BerryType is required.')).toBeInTheDocument();
+  });
+
+  it('submits a new listing with the entered fields', async () => {
+    vi.mocked(listingsApi.createListing).mockResolvedValue({
+      id: 'listing-1', sellerId: 'user-1', berryType: 'Tayberries', farmName: 'Sunrow Farm',
+      pricePerPint: 6.4, quantityAvailable: 10, note: null, createdAt: new Date().toISOString(),
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<SellPage />, { route: '/sell' });
+
+    await user.type(screen.getByLabelText('Berry'), 'Tayberries');
+    await user.type(screen.getByLabelText('Farm or garden'), 'Sunrow Farm');
+    await user.type(screen.getByLabelText('Price per pint ($)'), '6.40');
+    await user.type(screen.getByLabelText('Pints available'), '10');
+    await user.click(screen.getByRole('button', { name: 'Post listing' }));
+
+    await waitFor(() =>
+      expect(listingsApi.createListing).toHaveBeenCalledWith({
+        berryType: 'Tayberries', farmName: 'Sunrow Farm', pricePerPint: 6.4, quantityAvailable: 10, note: null,
+      }),
+    );
+  });
+});
