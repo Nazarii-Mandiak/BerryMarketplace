@@ -14,6 +14,15 @@ public class ReservationsService
 
     public async Task<ReserveResult> ReserveAsync(Guid listingId, Guid buyerId, CancellationToken ct)
     {
+        // The decrement UPDATE and the Reservation insert must commit or roll back
+        // together: without an explicit transaction they'd be two separate implicit
+        // transactions, and a crash/exception between them would leave stock
+        // permanently decremented with no reservation row to account for it. This
+        // transaction only ever wraps writes that happen after the atomicity guard
+        // below has already been evaluated by Postgres, so it does not reintroduce
+        // any read-then-write race on QuantityAvailable.
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+
         // Single atomic conditional UPDATE: the decrement and the "is there stock" check
         // happen as one statement executed by Postgres, so two simultaneous requests on
         // the last pint cannot both see QuantityAvailable > 0 and both succeed. A
@@ -25,6 +34,8 @@ public class ReservationsService
 
         if (rows == 0)
         {
+            // Nothing was written, so there's nothing to commit; let the transaction
+            // dispose without committing (equivalent to a no-op rollback).
             return ReserveResult.SoldOut;
         }
 
@@ -39,6 +50,8 @@ public class ReservationsService
         };
         _db.Reservations.Add(reservation);
         await _db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
 
         return ReserveResult.Success(reservation);
     }
