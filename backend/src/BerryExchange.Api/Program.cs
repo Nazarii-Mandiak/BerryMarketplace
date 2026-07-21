@@ -1,6 +1,7 @@
 using BerryExchange.Api.Accounts;
 using BerryExchange.Api.Infrastructure;
 using BerryExchange.Api.Listings;
+using BerryExchange.Api.Reservations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -52,6 +53,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ListingsService>();
+builder.Services.AddScoped<ReservationsService>();
 
 var app = builder.Build();
 
@@ -72,6 +74,7 @@ app.UseAuthorization();
 
 app.MapAccountsEndpoints();
 app.MapListingsEndpoints();
+app.MapReservationsEndpoints();
 
 app.MapGet("/", () => "Hello World!");
 
