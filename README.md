@@ -25,3 +25,14 @@ python3 -m http.server 8000
 ```
 
 then visit `http://localhost:8000`.
+
+## Backend API
+
+The real backend lives in `backend/` — an ASP.NET Core Web API over PostgreSQL. See `docs/superpowers/specs/2026-07-20-berry-exchange-architecture-design.md` for the full design and `docs/adr/` for the individual decisions.
+
+Run the tests (requires Docker running locally, for the Testcontainers-based Postgres):
+
+```
+cd backend
+dotnet test
+```
