@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../testUtils';
 import { SellPage } from './SellPage';
@@ -22,7 +22,9 @@ describe('SellPage', () => {
     await user.type(screen.getByLabelText('Farm or garden'), 'Sunrow Farm');
     await user.type(screen.getByLabelText('Price per pint ($)'), '6.40');
     await user.type(screen.getByLabelText('Pints available'), '10');
-    await user.click(screen.getByRole('button', { name: 'Post listing' }));
+
+    const form = screen.getByRole('button', { name: 'Post listing' }).closest('form')!;
+    fireEvent.submit(form);
 
     expect(await screen.findByText('BerryType is required.')).toBeInTheDocument();
   });

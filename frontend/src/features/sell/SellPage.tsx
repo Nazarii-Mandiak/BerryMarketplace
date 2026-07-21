@@ -61,6 +61,7 @@ export function SellPage() {
               placeholder="e.g. Tayberries"
               value={berryType}
               onChange={(e) => setBerryType(e.target.value)}
+              required
             />
           </div>
           <div className="field">
@@ -70,6 +71,7 @@ export function SellPage() {
               maxLength={40}
               value={farmName}
               onChange={(e) => setFarmName(e.target.value)}
+              required
             />
           </div>
           <div className="row-2">
@@ -82,6 +84,7 @@ export function SellPage() {
                 step="0.05"
                 value={pricePerPint}
                 onChange={(e) => setPricePerPint(e.target.value)}
+                required
               />
             </div>
             <div className="field">
@@ -93,6 +96,7 @@ export function SellPage() {
                 step="1"
                 value={quantityAvailable}
                 onChange={(e) => setQuantityAvailable(e.target.value)}
+                required
               />
             </div>
           </div>
