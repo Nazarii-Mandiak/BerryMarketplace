@@ -27,7 +27,7 @@ public class EnrichingHandlerTests
         var http = new HttpClient(capturing) { BaseAddress = new Uri("http://api.test") };
         using var embedder = new LocalTextEmbedder();
         var handler = new EnrichingListingCreatedHandler(embedder, new EnrichmentApiClient(http),
-            NullLogger<EnrichingListingCreatedHandler>.Instance);
+            new DisabledGenerativeAi(), NullLogger<EnrichingListingCreatedHandler>.Instance);
 
         var evt = new ListingCreatedEvent(Guid.NewGuid(), Guid.NewGuid(), "Blackberry", "Hedge Farm",
             6m, 8, "plump", DateTimeOffset.UtcNow);
@@ -36,5 +36,32 @@ public class EnrichingHandlerTests
         Assert.Contains($"/api/internal/listings/{evt.ListingId}/enrichment", capturing.Request!.RequestUri!.ToString());
         using var doc = JsonDocument.Parse(capturing.Body!);
         Assert.Equal(384, doc.RootElement.GetProperty("embedding").GetArrayLength());
+        Assert.Equal(JsonValueKind.Null, doc.RootElement.GetProperty("tastingNotes").ValueKind);
+    }
+
+    private sealed class FakeNotesAi : IGenerativeAi
+    {
+        public bool IsEnabled => true;
+        public Task<ListingCopySuggestion?> SuggestListingCopyAsync(ListingDraft draft,
+            IReadOnlyList<ComparableListing> comparables, CancellationToken ct) =>
+            Task.FromResult<ListingCopySuggestion?>(null);
+        public Task<string?> GenerateTastingNotesAsync(string berryType, string farmName, string? note, CancellationToken ct) =>
+            Task.FromResult<string?>("Deep, bramble-sweet flavor.");
+    }
+
+    [Fact]
+    public async Task Handler_includes_generated_tasting_notes_when_ai_is_enabled()
+    {
+        var capturing = new CapturingHandler();
+        var http = new HttpClient(capturing) { BaseAddress = new Uri("http://api.test") };
+        using var embedder = new LocalTextEmbedder();
+        var handler = new EnrichingListingCreatedHandler(embedder, new EnrichmentApiClient(http),
+            new FakeNotesAi(), NullLogger<EnrichingListingCreatedHandler>.Instance);
+
+        await handler.HandleAsync(new ListingCreatedEvent(Guid.NewGuid(), Guid.NewGuid(), "Blackberry",
+            "Hedge Farm", 6m, 8, "plump", DateTimeOffset.UtcNow), CancellationToken.None);
+
+        using var doc = JsonDocument.Parse(capturing.Body!);
+        Assert.Equal("Deep, bramble-sweet flavor.", doc.RootElement.GetProperty("tastingNotes").GetString());
     }
 }

@@ -10,6 +10,17 @@ builder.Services.AddSingleton(sp =>
     http.DefaultRequestHeaders.Add("X-Internal-ApiKey", config["Internal:ApiKey"] ?? "");
     return new EnrichmentApiClient(http);
 });
+var workerAnthropicKey = builder.Configuration["Anthropic:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+if (!string.IsNullOrEmpty(workerAnthropicKey))
+{
+    builder.Services.AddSingleton<IGenerativeAi>(new AnthropicGenerativeAi(workerAnthropicKey));
+}
+else
+{
+    builder.Services.AddSingleton<IGenerativeAi, DisabledGenerativeAi>();
+}
+
 builder.Services.AddSingleton<IListingCreatedHandler, EnrichingListingCreatedHandler>();
 builder.Services.AddHostedService<RabbitMqConsumerService>();
 

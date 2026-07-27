@@ -59,6 +59,7 @@ services:
       RabbitMq__Host: rabbitmq
       Api__BaseUrl: http://api:8080
       Internal__ApiKey: dev-internal-key
+      Anthropic__ApiKey: ${ANTHROPIC_API_KEY:-}
     depends_on:
       rabbitmq:
         condition: service_healthy
