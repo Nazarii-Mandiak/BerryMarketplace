@@ -1,4 +1,5 @@
 using BerryExchange.Api.Accounts;
+using BerryExchange.Api.Ai;
 using BerryExchange.Api.Infrastructure;
 using BerryExchange.Api.Infrastructure.Messaging;
 using BerryExchange.Api.Listings;
@@ -93,6 +94,7 @@ app.UseAuthorization();
 app.MapAccountsEndpoints();
 app.MapListingsEndpoints();
 app.MapReservationsEndpoints();
+app.MapInternalEnrichmentEndpoints();
 
 app.Run();
 

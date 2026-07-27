@@ -23,6 +23,7 @@ services:
       ConnectionStrings__BerryExchangeDb: Host=postgres;Database=berryexchange;Username=berry;Password=berry
       Database__AutoMigrate: "true"
       RabbitMq__Host: rabbitmq
+      Internal__ApiKey: dev-internal-key
     ports:
       - "5091:8080"
     depends_on:
