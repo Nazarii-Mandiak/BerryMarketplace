@@ -55,6 +55,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
 
+builder.Services.AddSingleton<BerryExchange.Api.Infrastructure.Messaging.IEventPublisher,
+    BerryExchange.Api.Infrastructure.Messaging.NullEventPublisher>();
+
 var app = builder.Build();
 
 // Force the lazy AddDbContext options delegate to run now, at startup, instead of on first
