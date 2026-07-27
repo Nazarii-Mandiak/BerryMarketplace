@@ -33,6 +33,7 @@ describe('SellPage', () => {
     vi.mocked(listingsApi.createListing).mockResolvedValue({
       id: 'listing-1', sellerId: 'user-1', berryType: 'Tayberries', farmName: 'Sunrow Farm',
       pricePerPint: 6.4, quantityAvailable: 10, note: null, createdAt: new Date().toISOString(),
+      aiTastingNotes: null,
     });
     const user = userEvent.setup();
 
