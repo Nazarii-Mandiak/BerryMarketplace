@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BerryExchange.Contracts\BerryExchange.Contracts.csproj" />
+    <ProjectReference Include="..\BerryExchange.AiCore\BerryExchange.AiCore.csproj" />
   </ItemGroup>
 
 </Project>
