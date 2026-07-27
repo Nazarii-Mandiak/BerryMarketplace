@@ -22,11 +22,25 @@ services:
     environment:
       ConnectionStrings__BerryExchangeDb: Host=postgres;Database=berryexchange;Username=berry;Password=berry
       Database__AutoMigrate: "true"
+      RabbitMq__Host: rabbitmq
     ports:
       - "5091:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   frontend:
     build: frontend
@@ -34,6 +48,16 @@ services:
       - "5173:80"
     depends_on:
       - api
+
+  ai-worker:
+    build:
+      context: backend
+      dockerfile: src/BerryExchange.AiWorker/Dockerfile
+    environment:
+      RabbitMq__Host: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   pgdata:

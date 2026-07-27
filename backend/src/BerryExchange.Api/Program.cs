@@ -1,5 +1,6 @@
 using BerryExchange.Api.Accounts;
 using BerryExchange.Api.Infrastructure;
+using BerryExchange.Api.Infrastructure.Messaging;
 using BerryExchange.Api.Listings;
 using BerryExchange.Api.Reservations;
 using Microsoft.AspNetCore.Identity;
@@ -54,6 +55,15 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
+
+if (!string.IsNullOrEmpty(builder.Configuration["RabbitMq:Host"]))
+{
+    builder.Services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
+}
+else
+{
+    builder.Services.AddSingleton<IEventPublisher, NullEventPublisher>();
+}
 
 var app = builder.Build();
 

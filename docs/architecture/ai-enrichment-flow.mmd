@@ -1,0 +1,21 @@
+%% Berry Exchange — supplementary: listing.created -> AI worker enrichment flow (Phase 2 skeleton)
+sequenceDiagram
+    participant Grower as Grower (Browser)
+    participant API as Listings API
+    participant DB as PostgreSQL
+    participant MQ as RabbitMQ (berry.events)
+    participant Worker as AI Worker (ai-enrichment queue)
+
+    Grower->>API: POST /api/listings
+    API->>DB: INSERT listing
+    DB-->>API: listing committed
+    API-->>Grower: 201 Created
+    API--)MQ: publish listing.created (best-effort, post-commit)
+    MQ--)Worker: deliver listing.created (bound to ai-enrichment queue)
+    Note over Worker: LoggingListingCreatedHandler.HandleAsync<br/>logs for now - Phase 3/4 swaps in real enrichment
+    alt handler succeeds
+        Worker--)MQ: ack
+    else handler throws
+        Worker--)MQ: nack (requeue false)
+        Note over MQ: routes to berry.events.dlx then ai-enrichment.dead
+    end
