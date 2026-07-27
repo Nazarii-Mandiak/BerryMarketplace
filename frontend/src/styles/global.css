@@ -233,6 +233,45 @@ svg { display: block; }
 .search-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (max-width: 640px) { .search-input { margin-left: 0; width: 100%; } }
 
+.btn-smart-search {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.btn-smart-search:hover { border-color: var(--accent); color: var(--accent); }
+.btn-smart-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.smart-search-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -10px 0 22px;
+}
+.smart-search-banner .badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--leaf);
+  font-weight: 700;
+}
+.btn-clear {
+  font-size: 12.5px;
+  font-weight: 700;
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-clear:hover { color: var(--accent); }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -274,6 +313,7 @@ svg { display: block; }
 .card h3 { font-size: 20px; font-weight: 800; }
 .card .farm { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 700; }
 .card .note { font-family: var(--font-accent); font-style: italic; font-size: 14.5px; color: var(--ink-muted); flex-grow: 1; margin: 2px 0 0; }
+.card .tasting-notes { font-family: var(--font-accent); font-style: italic; font-size: 14.5px; color: var(--leaf); flex-grow: 1; margin: 2px 0 0; }
 .card .qty { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
 .card .qty.low { color: var(--accent); font-weight: 700; }
 .card .status-badge { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--leaf); font-weight: 700; }

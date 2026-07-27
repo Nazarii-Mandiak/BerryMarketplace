@@ -23,6 +23,7 @@ services:
       ConnectionStrings__BerryExchangeDb: Host=postgres;Database=berryexchange;Username=berry;Password=berry
       Database__AutoMigrate: "true"
       RabbitMq__Host: rabbitmq
+      Internal__ApiKey: dev-internal-key
     ports:
       - "5091:8080"
     depends_on:
@@ -55,6 +56,8 @@ services:
       dockerfile: src/BerryExchange.AiWorker/Dockerfile
     environment:
       RabbitMq__Host: rabbitmq
+      Api__BaseUrl: http://api:8080
+      Internal__ApiKey: dev-internal-key
     depends_on:
       rabbitmq:
         condition: service_healthy

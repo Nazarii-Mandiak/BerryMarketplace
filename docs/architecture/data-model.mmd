@@ -20,6 +20,8 @@ erDiagram
         int quantity_available
         string note
         timestamptz created_at
+        vector(384) embedding
+        string ai_tasting_notes
     }
     RESERVATION {
         uuid id PK

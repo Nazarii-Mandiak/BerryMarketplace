@@ -13,6 +13,14 @@ export interface ListingResponse {
   quantityAvailable: number;
   note: string | null;
   createdAt: string;
+  aiTastingNotes: string | null;
+}
+
+export type SearchMode = 'semantic' | 'keyword';
+
+export interface SearchListingsResponse {
+  mode: SearchMode;
+  results: ListingResponse[];
 }
 
 export interface ReservationWithListingResponse {

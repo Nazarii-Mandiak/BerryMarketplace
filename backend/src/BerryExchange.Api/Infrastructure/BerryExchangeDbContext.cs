@@ -18,12 +18,17 @@ public class BerryExchangeDbContext : IdentityDbContext<ApplicationUser, Identit
     {
         base.OnModelCreating(builder);
 
+        builder.HasPostgresExtension("vector");
+
         builder.Entity<Listing>(entity =>
         {
             entity.Property(l => l.BerryType).HasMaxLength(40).IsRequired();
             entity.Property(l => l.FarmName).HasMaxLength(40).IsRequired();
             entity.Property(l => l.Note).HasMaxLength(80);
             entity.Property(l => l.PricePerPint).HasColumnType("numeric(10,2)");
+            entity.Property(l => l.AiTastingNotes).HasMaxLength(300);
+            entity.Property(l => l.Embedding).HasColumnType("vector(384)");
+            entity.HasIndex(l => l.Embedding).HasMethod("hnsw").HasOperators("vector_cosine_ops");
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(l => l.SellerId);
         });
 

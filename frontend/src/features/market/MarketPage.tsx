@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getListings, reserveListing } from '../../api/listings';
+import { getListings, reserveListing, searchListings } from '../../api/listings';
 import { ApiError } from '../../api/client';
 import { useCurrentUser } from '../auth/useCurrentUser';
 import { useToast } from '../../components/ToastProvider';
 import { BerryIcon } from '../../components/BerryIcon';
-import type { ListingResponse } from '../../api/types';
+import type { ListingResponse, SearchListingsResponse } from '../../api/types';
 
 const LISTINGS_QUERY_KEY = ['listings'];
 const HARVEST_BERRIES = ['Strawberries', 'Blueberries', 'Raspberries', 'Blackberries', 'Gooseberries'];
@@ -27,6 +27,7 @@ export function MarketPage() {
   const location = useLocation();
   const [activeType, setActiveType] = useState('all');
   const [search, setSearch] = useState('');
+  const [smartSearch, setSmartSearch] = useState<SearchListingsResponse | null>(null);
 
   const reserveMutation = useMutation({
     mutationFn: (listingId: string) => reserveListing(listingId),
@@ -90,6 +91,51 @@ export function MarketPage() {
     return items;
   }, [listings, activeType, search]);
 
+  async function runSmartSearch() {
+    const q = search.trim();
+    if (!q) return;
+    setSmartSearch(await searchListings(q));
+  }
+
+  function renderCard(listing: ListingResponse) {
+    const soldOut = listing.quantityAvailable <= 0;
+    const low = !soldOut && listing.quantityAvailable <= 5;
+    const isOwnListing = user?.id === listing.sellerId;
+    return (
+      <div className="card" key={listing.id}>
+        <div className="art">
+          <BerryIcon berryType={listing.berryType} />
+          <span className="price-tag">{formatPrice(listing.pricePerPint)}</span>
+        </div>
+        <div className="card-body">
+          <h3>{listing.berryType}</h3>
+          <span className="farm">{listing.farmName}</span>
+          {listing.note && <p className="note">{listing.note}</p>}
+          {listing.aiTastingNotes && (
+            <p className="tasting-notes">
+              <em>{listing.aiTastingNotes}</em>
+            </p>
+          )}
+          <div className="card-foot">
+            <span className={`qty${low ? ' low' : ''}`}>
+              {soldOut ? 'Sold out' : `${listing.quantityAvailable} pt${listing.quantityAvailable === 1 ? '' : 's'} left`}
+            </span>
+            {!isOwnListing && (
+              <button
+                type="button"
+                className="btn-buy"
+                disabled={soldOut || reserveMutation.isPending}
+                onClick={() => reserveMutation.mutate(listing.id)}
+              >
+                {soldOut ? 'Sold out' : 'Buy a pint'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <section className="hero">
@@ -147,44 +193,30 @@ export function MarketPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <button type="button" className="btn-smart-search" onClick={runSmartSearch}>
+            Smart search
+          </button>
         </div>
-        <div className="grid">
-          {isLoading && <p className="empty-state">Loading the market…</p>}
-          {!isLoading && filtered.length === 0 && <p className="empty-state">No crates match that search.</p>}
-          {filtered.map((listing) => {
-            const soldOut = listing.quantityAvailable <= 0;
-            const low = !soldOut && listing.quantityAvailable <= 5;
-            const isOwnListing = user?.id === listing.sellerId;
-            return (
-              <div className="card" key={listing.id}>
-                <div className="art">
-                  <BerryIcon berryType={listing.berryType} />
-                  <span className="price-tag">{formatPrice(listing.pricePerPint)}</span>
-                </div>
-                <div className="card-body">
-                  <h3>{listing.berryType}</h3>
-                  <span className="farm">{listing.farmName}</span>
-                  {listing.note && <p className="note">{listing.note}</p>}
-                  <div className="card-foot">
-                    <span className={`qty${low ? ' low' : ''}`}>
-                      {soldOut ? 'Sold out' : `${listing.quantityAvailable} pt${listing.quantityAvailable === 1 ? '' : 's'} left`}
-                    </span>
-                    {!isOwnListing && (
-                      <button
-                        type="button"
-                        className="btn-buy"
-                        disabled={soldOut || reserveMutation.isPending}
-                        onClick={() => reserveMutation.mutate(listing.id)}
-                      >
-                        {soldOut ? 'Sold out' : 'Buy a pint'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {smartSearch && (
+          <div className="smart-search-banner">
+            <span className="badge">Smart results · {smartSearch.mode}</span>
+            <button type="button" className="btn-clear" onClick={() => setSmartSearch(null)}>
+              Clear
+            </button>
+          </div>
+        )}
+        {smartSearch ? (
+          <div className="grid">
+            {smartSearch.results.length === 0 && <p className="empty-state">No crates match that search.</p>}
+            {smartSearch.results.map((listing) => renderCard(listing))}
+          </div>
+        ) : (
+          <div className="grid">
+            {isLoading && <p className="empty-state">Loading the market…</p>}
+            {!isLoading && filtered.length === 0 && <p className="empty-state">No crates match that search.</p>}
+            {filtered.map((listing) => renderCard(listing))}
+          </div>
+        )}
       </section>
     </>
   );

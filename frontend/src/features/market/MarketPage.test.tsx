@@ -15,10 +15,12 @@ const listings: ListingResponse[] = [
   {
     id: 'l1', sellerId: 'seller-1', berryType: 'Strawberries', farmName: 'Sunrow Farm',
     pricePerPint: 6.4, quantityAvailable: 3, note: null, createdAt: new Date().toISOString(),
+    aiTastingNotes: null,
   },
   {
     id: 'l2', sellerId: 'seller-2', berryType: 'Blueberries', farmName: 'Blue Hollow Orchard',
     pricePerPint: 5.2, quantityAvailable: 0, note: null, createdAt: new Date().toISOString(),
+    aiTastingNotes: null,
   },
 ];
 
@@ -73,5 +75,30 @@ describe('MarketPage', () => {
     await waitFor(() => expect(within(strawberryCard).getByText('2 pts left')).toBeInTheDocument());
     await waitFor(() => expect(within(strawberryCard).getByText('3 pts left')).toBeInTheDocument());
     expect(await screen.findByText('Sold out.')).toBeInTheDocument();
+  });
+
+  it('runs smart search and shows the semantic results with a mode badge', async () => {
+    vi.mocked(listingsApi.getListings).mockResolvedValue(listings);
+    vi.mocked(listingsApi.searchListings).mockResolvedValue({
+      mode: 'semantic',
+      results: [
+        {
+          id: 'l3', sellerId: 'seller-3', berryType: 'Strawberry', farmName: 'Sweet Fields',
+          pricePerPint: 7.0, quantityAvailable: 4, note: null, createdAt: new Date().toISOString(),
+          aiTastingNotes: 'Candy-sweet.',
+        },
+      ],
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<MarketPage />, { route: '/market' });
+
+    await screen.findByRole('heading', { name: 'Strawberries' });
+    await user.type(screen.getByRole('searchbox'), 'sweet berries for jam');
+    await user.click(screen.getByRole('button', { name: /smart search/i }));
+
+    expect(await screen.findByText(/smart results · semantic/i)).toBeInTheDocument();
+    expect(screen.getByText('Sweet Fields')).toBeInTheDocument();
+    expect(screen.getByText('Candy-sweet.')).toBeInTheDocument();
   });
 });

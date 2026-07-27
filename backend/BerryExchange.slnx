@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/BerryExchange.AiCore/BerryExchange.AiCore.csproj" />
     <Project Path="src/BerryExchange.AiWorker/BerryExchange.AiWorker.csproj" />
     <Project Path="src/BerryExchange.Api/BerryExchange.Api.csproj" />
     <Project Path="src/BerryExchange.Contracts/BerryExchange.Contracts.csproj" />

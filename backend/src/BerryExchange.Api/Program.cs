@@ -1,10 +1,12 @@
 using BerryExchange.Api.Accounts;
+using BerryExchange.Api.Ai;
 using BerryExchange.Api.Infrastructure;
 using BerryExchange.Api.Infrastructure.Messaging;
 using BerryExchange.Api.Listings;
 using BerryExchange.Api.Reservations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,7 @@ builder.Services.AddDbContext<BerryExchangeDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("BerryExchangeDb")
         ?? throw new InvalidOperationException("Missing ConnectionStrings:BerryExchangeDb");
-    options.UseNpgsql(connectionString);
+    options.UseNpgsql(connectionString, npgsql => npgsql.UseVector());
 });
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
@@ -55,6 +57,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
+builder.Services.AddSingleton<BerryExchange.AiCore.ITextEmbedder, BerryExchange.AiCore.LocalTextEmbedder>();
 
 if (!string.IsNullOrEmpty(builder.Configuration["RabbitMq:Host"]))
 {
@@ -92,6 +95,7 @@ app.UseAuthorization();
 app.MapAccountsEndpoints();
 app.MapListingsEndpoints();
 app.MapReservationsEndpoints();
+app.MapInternalEnrichmentEndpoints();
 
 app.Run();
 

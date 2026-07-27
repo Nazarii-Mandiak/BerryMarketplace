@@ -4,8 +4,10 @@ public record CreateListingRequest(string BerryType, string FarmName, decimal Pr
 
 public record ListingResponse(
     Guid Id, Guid SellerId, string BerryType, string FarmName,
-    decimal PricePerPint, int QuantityAvailable, string? Note, DateTimeOffset CreatedAt)
+    decimal PricePerPint, int QuantityAvailable, string? Note, DateTimeOffset CreatedAt,
+    string? AiTastingNotes)
 {
     public static ListingResponse FromEntity(Listing l) =>
-        new(l.Id, l.SellerId, l.BerryType, l.FarmName, l.PricePerPint, l.QuantityAvailable, l.Note, l.CreatedAt);
+        new(l.Id, l.SellerId, l.BerryType, l.FarmName, l.PricePerPint, l.QuantityAvailable,
+            l.Note, l.CreatedAt, l.AiTastingNotes);
 }
