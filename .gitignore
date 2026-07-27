@@ -1,1 +1,19 @@
+# OS
 .DS_Store
+
+# AI tooling (personal, not part of the product)
+.claude/
+.superpowers/
+
+# Node
+node_modules/
+dist/
+
+# .NET
+bin/
+obj/
+*.user
+
+# Secrets / local env
+.env
+.env.*
