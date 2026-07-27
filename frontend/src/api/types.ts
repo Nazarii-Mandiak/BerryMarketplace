@@ -52,3 +52,21 @@ export interface RegisterRequest {
   password: string;
   displayName: string;
 }
+
+export interface AiStatus {
+  enabled: boolean;
+}
+
+export interface ListingDraft {
+  berryType: string;
+  farmName: string;
+  pricePerPint: number | null;
+  quantityAvailable: number | null;
+  note: string | null;
+}
+
+export interface ListingCopySuggestion {
+  improvedDescription: string;
+  suggestedPricePerPint: number;
+  reasoning: string;
+}
