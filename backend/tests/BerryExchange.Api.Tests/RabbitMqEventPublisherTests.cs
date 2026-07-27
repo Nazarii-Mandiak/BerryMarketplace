@@ -9,7 +9,7 @@ namespace BerryExchange.Api.Tests;
 
 public class RabbitMqEventPublisherTests : IAsyncLifetime
 {
-    private readonly RabbitMqContainer _rabbit = new RabbitMqBuilder().Build();
+    private readonly RabbitMqContainer _rabbit = new RabbitMqBuilder("rabbitmq:4-management").Build();
 
     public Task InitializeAsync() => _rabbit.StartAsync();
     public Task DisposeAsync() => _rabbit.DisposeAsync().AsTask();
