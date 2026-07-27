@@ -66,7 +66,14 @@ var app = builder.Build();
 // migration happens here. Do not delete as dead code.
 using (var scope = app.Services.CreateScope())
 {
-    scope.ServiceProvider.GetRequiredService<BerryExchangeDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<BerryExchangeDbContext>();
+    // In containers (compose/k8s) the schema is applied at startup instead of by a
+    // developer running `dotnet ef database update`. Off by default so tests and
+    // local dev keep their existing behavior.
+    if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
+    {
+        db.Database.Migrate();
+    }
 }
 
 app.UseAuthentication();
