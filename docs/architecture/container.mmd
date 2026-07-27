@@ -24,9 +24,13 @@ graph TB
         FrontendContainer["frontend container<br/>nginx: serves built SPA bundle<br/>and proxies /api/ to api"]
         ApiContainer["api container<br/>ASP.NET Core Web API<br/>(Database:AutoMigrate=true)"]
         PostgresContainer[("postgres container<br/>pgvector/pgvector:pg16")]
+        RabbitMqContainer{{"rabbitmq container<br/>rabbitmq:4-management<br/>berry.events topic exchange"}}
+        AiWorkerContainer["ai-worker container<br/>.NET Worker Service<br/>(BerryExchange.AiWorker)"]
     end
 
     ComposeBrowser -->|"http://localhost:5173"| FrontendContainer
     FrontendContainer -->|serves SPA bundle| ComposeBrowser
     FrontendContainer -->|"/api/* proxy_pass"| ApiContainer
     ApiContainer -->|"EF Core / Npgsql<br/>Host=postgres"| PostgresContainer
+    ApiContainer -->|"publishes listing.created<br/>AMQP"| RabbitMqContainer
+    AiWorkerContainer -->|"consumes ai-enrichment queue<br/>AMQP"| RabbitMqContainer

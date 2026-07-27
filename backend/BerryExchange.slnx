@@ -1,9 +1,11 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/BerryExchange.AiWorker/BerryExchange.AiWorker.csproj" />
     <Project Path="src/BerryExchange.Api/BerryExchange.Api.csproj" />
     <Project Path="src/BerryExchange.Contracts/BerryExchange.Contracts.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/BerryExchange.AiWorker.Tests/BerryExchange.AiWorker.Tests.csproj" />
     <Project Path="tests/BerryExchange.Api.Tests/BerryExchange.Api.Tests.csproj" />
   </Folder>
 </Solution>

@@ -49,5 +49,15 @@ services:
     depends_on:
       - api
 
+  ai-worker:
+    build:
+      context: backend
+      dockerfile: src/BerryExchange.AiWorker/Dockerfile
+    environment:
+      RabbitMq__Host: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
 volumes:
   pgdata:
