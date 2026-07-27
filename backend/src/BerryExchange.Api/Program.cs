@@ -59,6 +59,19 @@ builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
 builder.Services.AddSingleton<BerryExchange.AiCore.ITextEmbedder, BerryExchange.AiCore.LocalTextEmbedder>();
 
+var anthropicApiKey = builder.Configuration["Anthropic:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+if (!string.IsNullOrEmpty(anthropicApiKey))
+{
+    builder.Services.AddSingleton<BerryExchange.AiCore.IGenerativeAi>(
+        new BerryExchange.AiCore.AnthropicGenerativeAi(anthropicApiKey));
+}
+else
+{
+    builder.Services.AddSingleton<BerryExchange.AiCore.IGenerativeAi,
+        BerryExchange.AiCore.DisabledGenerativeAi>();
+}
+
 if (!string.IsNullOrEmpty(builder.Configuration["RabbitMq:Host"]))
 {
     builder.Services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
@@ -96,6 +109,7 @@ app.MapAccountsEndpoints();
 app.MapListingsEndpoints();
 app.MapReservationsEndpoints();
 app.MapInternalEnrichmentEndpoints();
+app.MapAiEndpoints();
 
 app.Run();
 

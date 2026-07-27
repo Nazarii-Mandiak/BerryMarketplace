@@ -15,15 +15,20 @@ graph LR
         end
         Infra["Infrastructure<br/>EF Core DbContext, Identity stores, Migrations"]
         Messaging["Messaging (IEventPublisher)"]
+        Ai["Ai module<br/>(/api/ai/status, listing assistant)"]
     end
-    AiCore["BerryExchange.AiCore (embeddings)<br/>ITextEmbedder / LocalTextEmbedder<br/>shared with AiWorker"]
+    AiCore["BerryExchange.AiCore (embeddings + generative AI)<br/>ITextEmbedder / LocalTextEmbedder<br/>IGenerativeAi / AnthropicGenerativeAi / DisabledGenerativeAi<br/>shared with AiWorker"]
     DB[("PostgreSQL<br/>+ pgvector")]
     Broker[("RabbitMQ<br/>berry.events exchange")]
+    Claude[("Claude API<br/>claude-opus-5")]
 
     Endpoints --> App
+    Endpoints --> Ai
     App --> Domain
     App --> Infra
     Infra --> DB
     App --> Messaging
     Messaging --> Broker
     App --> AiCore
+    Ai --> AiCore
+    AiCore --> Claude
