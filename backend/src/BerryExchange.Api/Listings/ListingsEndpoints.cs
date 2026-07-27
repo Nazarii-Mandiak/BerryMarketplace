@@ -12,6 +12,16 @@ public static class ListingsEndpoints
             return Results.Ok(listings.Select(ListingResponse.FromEntity));
         });
 
+        group.MapGet("/search", async (string? q, int? limit, ListingsService service, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return Results.BadRequest(new { errors = new[] { "q is required." } });
+            }
+            var (mode, results) = await service.SearchAsync(q.Trim(), Math.Clamp(limit ?? 10, 1, 50), ct);
+            return Results.Ok(new { mode, results = results.Select(ListingResponse.FromEntity) });
+        });
+
         group.MapGet("/{id:guid}", async (Guid id, ListingsService service, CancellationToken ct) =>
         {
             var listing = await service.GetByIdAsync(id, ct);

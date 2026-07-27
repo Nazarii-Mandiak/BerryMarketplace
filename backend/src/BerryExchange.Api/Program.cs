@@ -57,6 +57,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
+builder.Services.AddSingleton<BerryExchange.AiCore.ITextEmbedder, BerryExchange.AiCore.LocalTextEmbedder>();
 
 if (!string.IsNullOrEmpty(builder.Configuration["RabbitMq:Host"]))
 {
