@@ -11,7 +11,7 @@ namespace BerryExchange.Api.Tests;
 
 public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("pgvector/pgvector:pg16")
         .WithDatabase("berryexchange_test")
         .WithUsername("test")
         .WithPassword("test")

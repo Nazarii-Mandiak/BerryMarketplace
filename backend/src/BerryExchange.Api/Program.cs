@@ -5,6 +5,7 @@ using BerryExchange.Api.Listings;
 using BerryExchange.Api.Reservations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,7 @@ builder.Services.AddDbContext<BerryExchangeDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("BerryExchangeDb")
         ?? throw new InvalidOperationException("Missing ConnectionStrings:BerryExchangeDb");
-    options.UseNpgsql(connectionString);
+    options.UseNpgsql(connectionString, npgsql => npgsql.UseVector());
 });
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
