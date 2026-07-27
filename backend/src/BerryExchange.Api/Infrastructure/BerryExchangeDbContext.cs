@@ -1,4 +1,5 @@
 using BerryExchange.Api.Accounts;
+using BerryExchange.Api.Chat;
 using BerryExchange.Api.Listings;
 using BerryExchange.Api.Reservations;
 using Microsoft.AspNetCore.Identity;
@@ -13,6 +14,8 @@ public class BerryExchangeDbContext : IdentityDbContext<ApplicationUser, Identit
 
     public DbSet<Listing> Listings => Set<Listing>();
     public DbSet<Reservation> Reservations => Set<Reservation>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -36,6 +39,19 @@ public class BerryExchangeDbContext : IdentityDbContext<ApplicationUser, Identit
         {
             entity.HasOne<Listing>().WithMany().HasForeignKey(r => r.ListingId);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(r => r.BuyerId);
+        });
+
+        builder.Entity<ChatConversation>(entity =>
+        {
+            entity.Property(c => c.Title).HasMaxLength(80).IsRequired();
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(c => c.UserId);
+        });
+        builder.Entity<ChatMessage>(entity =>
+        {
+            entity.Property(m => m.Role).HasMaxLength(16).IsRequired();
+            entity.Property(m => m.Content).IsRequired();
+            entity.HasOne<ChatConversation>().WithMany().HasForeignKey(m => m.ConversationId);
+            entity.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         });
     }
 }

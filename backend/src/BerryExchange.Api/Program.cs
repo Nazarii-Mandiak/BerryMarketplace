@@ -1,5 +1,6 @@
 using BerryExchange.Api.Accounts;
 using BerryExchange.Api.Ai;
+using BerryExchange.Api.Chat;
 using BerryExchange.Api.Infrastructure;
 using BerryExchange.Api.Infrastructure.Messaging;
 using BerryExchange.Api.Listings;
@@ -57,6 +58,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
+builder.Services.AddScoped<BerryExchange.Api.Chat.ChatService>();
 builder.Services.AddSingleton<BerryExchange.AiCore.ITextEmbedder, BerryExchange.AiCore.LocalTextEmbedder>();
 
 var anthropicApiKey = builder.Configuration["Anthropic:ApiKey"]
@@ -110,6 +112,7 @@ app.MapListingsEndpoints();
 app.MapReservationsEndpoints();
 app.MapInternalEnrichmentEndpoints();
 app.MapAiEndpoints();
+app.MapChatEndpoints();
 
 app.Run();
 
