@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: berryexchange
+      POSTGRES_USER: berry
+      POSTGRES_PASSWORD: berry
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U berry -d berryexchange"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: backend
+      dockerfile: src/BerryExchange.Api/Dockerfile
+    environment:
+      ConnectionStrings__BerryExchangeDb: Host=postgres;Database=berryexchange;Username=berry;Password=berry
+      Database__AutoMigrate: "true"
+      RabbitMq__Host: rabbitmq
+      Internal__ApiKey: dev-internal-key
+      Anthropic__ApiKey: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "5091:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build: frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+  ai-worker:
+    build:
+      context: backend
+      dockerfile: src/BerryExchange.AiWorker/Dockerfile
+    environment:
+      RabbitMq__Host: rabbitmq
+      Api__BaseUrl: http://api:8080
+      Internal__ApiKey: dev-internal-key
+      Anthropic__ApiKey: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  pgdata:

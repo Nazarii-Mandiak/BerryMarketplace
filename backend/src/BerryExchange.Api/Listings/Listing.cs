@@ -1,3 +1,5 @@
+using Pgvector;
+
 namespace BerryExchange.Api.Listings;
 
 public class Listing
@@ -10,4 +12,6 @@ public class Listing
     public int QuantityAvailable { get; set; }
     public string? Note { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+    public Vector? Embedding { get; set; }
+    public string? AiTastingNotes { get; set; }
 }

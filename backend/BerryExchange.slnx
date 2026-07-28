@@ -1,8 +1,14 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/BerryExchange.AiCore/BerryExchange.AiCore.csproj" />
+    <Project Path="src/BerryExchange.AiWorker/BerryExchange.AiWorker.csproj" />
     <Project Path="src/BerryExchange.Api/BerryExchange.Api.csproj" />
+    <Project Path="src/BerryExchange.Contracts/BerryExchange.Contracts.csproj" />
+    <Project Path="src/BerryExchange.McpServer/BerryExchange.McpServer.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/BerryExchange.AiWorker.Tests/BerryExchange.AiWorker.Tests.csproj" />
     <Project Path="tests/BerryExchange.Api.Tests/BerryExchange.Api.Tests.csproj" />
+    <Project Path="tests/BerryExchange.McpServer.Tests/BerryExchange.McpServer.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,9 +1,13 @@
 using BerryExchange.Api.Accounts;
+using BerryExchange.Api.Ai;
+using BerryExchange.Api.Chat;
 using BerryExchange.Api.Infrastructure;
+using BerryExchange.Api.Infrastructure.Messaging;
 using BerryExchange.Api.Listings;
 using BerryExchange.Api.Reservations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +22,7 @@ builder.Services.AddDbContext<BerryExchangeDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("BerryExchangeDb")
         ?? throw new InvalidOperationException("Missing ConnectionStrings:BerryExchangeDb");
-    options.UseNpgsql(connectionString);
+    options.UseNpgsql(connectionString, npgsql => npgsql.UseVector());
 });
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
@@ -54,6 +58,48 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
+builder.Services.AddScoped<BerryExchange.Api.Chat.ChatService>();
+builder.Services.AddSingleton<BerryExchange.AiCore.ITextEmbedder, BerryExchange.AiCore.LocalTextEmbedder>();
+
+var anthropicApiKey = builder.Configuration["Anthropic:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+if (!string.IsNullOrEmpty(anthropicApiKey))
+{
+    builder.Services.AddSingleton<BerryExchange.AiCore.IGenerativeAi>(
+        new BerryExchange.AiCore.AnthropicGenerativeAi(anthropicApiKey));
+}
+else
+{
+    builder.Services.AddSingleton<BerryExchange.AiCore.IGenerativeAi,
+        BerryExchange.AiCore.DisabledGenerativeAi>();
+}
+
+builder.Services.AddScoped<BerryExchange.Api.Chat.Agent.IChatToolExecutor,
+    BerryExchange.Api.Chat.Agent.ChatToolExecutor>();
+builder.Services.AddScoped<BerryExchange.Api.Chat.Agent.ChatAgent>(sp => new(
+    sp.GetRequiredService<BerryExchange.Api.Chat.Agent.IChatAgentModel>(),
+    sp.GetRequiredService<BerryExchange.Api.Chat.Agent.IChatToolExecutor>()));
+if (!string.IsNullOrEmpty(anthropicApiKey))
+{
+    builder.Services.AddSingleton<BerryExchange.Api.Chat.Agent.IChatAgentModel>(
+        new BerryExchange.Api.Chat.Agent.AnthropicChatAgentModel(anthropicApiKey));
+}
+else
+{
+    // Endpoint 503s before resolving the agent when AI is disabled, but DI still
+    // needs a registration for test overrides to Replace.
+    builder.Services.AddSingleton<BerryExchange.Api.Chat.Agent.IChatAgentModel>(
+        new BerryExchange.Api.Chat.Agent.ThrowingChatAgentModel());
+}
+
+if (!string.IsNullOrEmpty(builder.Configuration["RabbitMq:Host"]))
+{
+    builder.Services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
+}
+else
+{
+    builder.Services.AddSingleton<IEventPublisher, NullEventPublisher>();
+}
 
 var app = builder.Build();
 
@@ -66,7 +112,14 @@ var app = builder.Build();
 // migration happens here. Do not delete as dead code.
 using (var scope = app.Services.CreateScope())
 {
-    scope.ServiceProvider.GetRequiredService<BerryExchangeDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<BerryExchangeDbContext>();
+    // In containers (compose/k8s) the schema is applied at startup instead of by a
+    // developer running `dotnet ef database update`. Off by default so tests and
+    // local dev keep their existing behavior.
+    if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
+    {
+        db.Database.Migrate();
+    }
 }
 
 app.UseAuthentication();
@@ -75,6 +128,9 @@ app.UseAuthorization();
 app.MapAccountsEndpoints();
 app.MapListingsEndpoints();
 app.MapReservationsEndpoints();
+app.MapInternalEnrichmentEndpoints();
+app.MapAiEndpoints();
+app.MapChatEndpoints();
 
 app.Run();
 

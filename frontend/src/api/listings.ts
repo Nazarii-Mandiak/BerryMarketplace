@@ -1,8 +1,12 @@
 import { apiRequest } from './client';
-import type { CreateListingRequest, ListingResponse } from './types';
+import type { CreateListingRequest, ListingResponse, SearchListingsResponse } from './types';
 
 export function getListings(): Promise<ListingResponse[]> {
   return apiRequest<ListingResponse[]>('/listings');
+}
+
+export function searchListings(q: string): Promise<SearchListingsResponse> {
+  return apiRequest<SearchListingsResponse>(`/listings/search?q=${encodeURIComponent(q)}`);
 }
 
 export function createListing(request: CreateListingRequest): Promise<ListingResponse> {

@@ -1,7 +1,8 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createListing } from '../../api/listings';
+import { getAiStatus, suggestListing } from '../../api/ai';
 import { ApiError } from '../../api/client';
 
 const LISTINGS_QUERY_KEY = ['listings'];
@@ -13,8 +14,24 @@ export function SellPage() {
   const [quantityAvailable, setQuantityAvailable] = useState('');
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiReasoning, setAiReasoning] = useState<string | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    let cancelled = false;
+    getAiStatus()
+      .then((status) => {
+        if (!cancelled) setAiEnabled(status.enabled);
+      })
+      .catch(() => {
+        if (!cancelled) setAiEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -34,10 +51,34 @@ export function SellPage() {
     },
   });
 
+  const aiMutation = useMutation({
+    mutationFn: () =>
+      suggestListing({
+        berryType,
+        farmName,
+        pricePerPint: pricePerPint.trim() ? Number(pricePerPint) : null,
+        quantityAvailable: quantityAvailable.trim() ? Number(quantityAvailable) : null,
+        note: note.trim() ? note.trim() : null,
+      }),
+    onSuccess: (suggestion) => {
+      setNote(suggestion.improvedDescription);
+      setPricePerPint(String(suggestion.suggestedPricePerPint));
+      setAiReasoning(suggestion.reasoning);
+    },
+    onError: (err) => {
+      setErrors(err instanceof ApiError ? err.errors : ['Something went wrong — try again.']);
+    },
+  });
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setErrors([]);
     mutation.mutate();
+  }
+
+  function handleImproveWithAi() {
+    setErrors([]);
+    aiMutation.mutate();
   }
 
   return (
@@ -110,10 +151,21 @@ export function SellPage() {
               onChange={(e) => setNote(e.target.value)}
             />
           </div>
+          {aiEnabled && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={aiMutation.isPending || !berryType.trim() || !farmName.trim()}
+              onClick={handleImproveWithAi}
+            >
+              {aiMutation.isPending ? 'Thinking…' : 'Improve with AI'}
+            </button>
+          )}
           <button type="submit" className="btn btn-primary" disabled={mutation.isPending}>
             {mutation.isPending ? 'Posting…' : 'Post listing'}
           </button>
         </form>
+        {aiReasoning && <p className="ai-reasoning">{aiReasoning}</p>}
       </div>
     </section>
   );

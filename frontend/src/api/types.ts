@@ -13,6 +13,14 @@ export interface ListingResponse {
   quantityAvailable: number;
   note: string | null;
   createdAt: string;
+  aiTastingNotes: string | null;
+}
+
+export type SearchMode = 'semantic' | 'keyword';
+
+export interface SearchListingsResponse {
+  mode: SearchMode;
+  results: ListingResponse[];
 }
 
 export interface ReservationWithListingResponse {
@@ -43,4 +51,35 @@ export interface RegisterRequest {
   email: string;
   password: string;
   displayName: string;
+}
+
+export interface AiStatus {
+  enabled: boolean;
+}
+
+export interface ListingDraft {
+  berryType: string;
+  farmName: string;
+  pricePerPint: number | null;
+  quantityAvailable: number | null;
+  note: string | null;
+}
+
+export interface ListingCopySuggestion {
+  improvedDescription: string;
+  suggestedPricePerPint: number;
+  reasoning: string;
+}
+
+export interface ChatConversation {
+  id: string;
+  title: string;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
 }
