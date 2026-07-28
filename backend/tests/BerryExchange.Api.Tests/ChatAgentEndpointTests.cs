@@ -26,6 +26,13 @@ public class ChatAgentEndpointTests : IClassFixture<ApiTestFixture>
         }
     }
 
+    private sealed class ThrowingModel : IChatAgentModel
+    {
+        public Task<AgentTurn> NextTurnAsync(string systemPrompt, IReadOnlyList<AgentToolDefinition> tools,
+            IReadOnlyList<AgentHistoryItem> history, CancellationToken ct) =>
+            throw new InvalidOperationException("simulated Claude API failure");
+    }
+
     private sealed class EnabledAi : IGenerativeAi
     {
         public bool IsEnabled => true;
@@ -63,5 +70,33 @@ public class ChatAgentEndpointTests : IClassFixture<ApiTestFixture>
         var messages = await client.GetFromJsonAsync<JsonElement>($"/api/chat/conversations/{conversationId}/messages");
         var roles = messages.EnumerateArray().Select(m => m.GetProperty("role").GetString()).ToList();
         Assert.Equal(["user", "assistant"], roles);
+    }
+
+    [Fact]
+    public async Task Model_failure_mid_loop_streams_an_error_frame_and_persists_no_assistant_reply()
+    {
+        var client = _fixture.WithWebHostBuilder(b => b.ConfigureServices(services =>
+        {
+            services.RemoveAll<IChatAgentModel>();
+            services.AddSingleton<IChatAgentModel>(new ThrowingModel());
+            services.RemoveAll<IGenerativeAi>();
+            services.AddSingleton<IGenerativeAi>(new EnabledAi());
+        })).CreateClient();
+
+        (await client.PostAsJsonAsync("/api/accounts/register",
+            new { Email = $"chat-{Guid.NewGuid():N}@test.dev", Password = "Password1!", DisplayName = "C" })).EnsureSuccessStatusCode();
+        var conversation = await (await client.PostAsJsonAsync("/api/chat/conversations", new { title = "hunt" }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var conversationId = conversation.GetProperty("id").GetGuid();
+
+        var response = await client.PostAsJsonAsync($"/api/chat/conversations/{conversationId}/messages",
+            new { content = "what's sweet right now?" });
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"type\":\"error\"", body);
+
+        var messages = await client.GetFromJsonAsync<JsonElement>($"/api/chat/conversations/{conversationId}/messages");
+        var roles = messages.EnumerateArray().Select(m => m.GetProperty("role").GetString()).ToList();
+        Assert.Equal(["user"], roles);
     }
 }

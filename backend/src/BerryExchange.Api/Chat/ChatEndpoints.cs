@@ -39,7 +39,7 @@ public static class ChatEndpoints
 
         group.MapPost("/conversations/{conversationId:guid}/messages", async (Guid conversationId,
             SendChatMessageRequest request, HttpContext http, ChatService chat, ChatAgent agent,
-            IGenerativeAi ai, CancellationToken ct) =>
+            IGenerativeAi ai, ILogger<Program> logger, CancellationToken ct) =>
         {
             if (!ai.IsEnabled)
             {
@@ -67,17 +67,32 @@ public static class ChatEndpoints
             http.Response.Headers.CacheControl = "no-cache";
 
             var assistantParts = new List<string>();
-            await foreach (var evt in agent.RunAsync(userId, history, ct))
+            try
             {
-                object payload = evt switch
+                await foreach (var evt in agent.RunAsync(userId, history, ct))
                 {
-                    AgentTextEvent text => new { type = "text", text = text.Text },
-                    AgentToolCallEvent tool => new { type = "tool_call", name = tool.Name },
-                    _ => new { type = "unknown" },
-                };
-                if (evt is AgentTextEvent t) assistantParts.Add(t.Text);
-                await http.Response.WriteAsync($"data: {JsonSerializer.Serialize(payload)}\n\n", ct);
+                    object payload = evt switch
+                    {
+                        AgentTextEvent text => new { type = "text", text = text.Text },
+                        AgentToolCallEvent tool => new { type = "tool_call", name = tool.Name },
+                        _ => new { type = "unknown" },
+                    };
+                    if (evt is AgentTextEvent t) assistantParts.Add(t.Text);
+                    await http.Response.WriteAsync($"data: {JsonSerializer.Serialize(payload)}\n\n", ct);
+                    await http.Response.Body.FlushAsync(ct);
+                }
+            }
+            catch (Exception ex)
+            {
+                // The request itself was aborted (client disconnected) - there is no
+                // connection left to write to, and attempting to would just throw again.
+                if (ct.IsCancellationRequested) return Results.Empty;
+
+                logger.LogError(ex, "Chat agent loop failed for conversation {ConversationId}", conversationId);
+                await http.Response.WriteAsync(
+                    "data: {\"type\":\"error\",\"message\":\"Something went wrong. Please try again.\"}\n\n", ct);
                 await http.Response.Body.FlushAsync(ct);
+                return Results.Empty;
             }
 
             if (assistantParts.Count > 0)
