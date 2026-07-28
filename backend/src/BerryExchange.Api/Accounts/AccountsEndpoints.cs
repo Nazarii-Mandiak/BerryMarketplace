@@ -83,7 +83,11 @@ public static class AccountsEndpoints
                         return Results.BadRequest(new { errors = createResult.Errors.Select(e => e.Description) });
                     }
                 }
-                await userManager.AddLoginAsync(user, new UserLoginInfo("Google", payload.Subject, "Google"));
+                var addLoginResult = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", payload.Subject, "Google"));
+                if (!addLoginResult.Succeeded)
+                {
+                    return Results.BadRequest(new { errors = addLoginResult.Errors.Select(e => e.Description) });
+                }
             }
 
             await signInManager.SignInAsync(user, isPersistent: true);
