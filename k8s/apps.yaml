@@ -10,6 +10,10 @@ spec:
     metadata:
       labels: { app: api }
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z postgres 5432; do echo waiting for postgres; sleep 1; done']
       containers:
         - name: api
           image: berry-api:local
