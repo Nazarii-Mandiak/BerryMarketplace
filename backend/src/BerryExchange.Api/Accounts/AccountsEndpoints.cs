@@ -45,6 +45,51 @@ public static class AccountsEndpoints
                 : Results.Unauthorized();
         });
 
+        group.MapPost("/google", async (
+            GoogleLoginRequest request,
+            IGoogleIdTokenValidator googleValidator,
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager) =>
+        {
+            var payload = await googleValidator.ValidateAsync(request.Credential);
+            if (payload is null)
+            {
+                return Results.Unauthorized();
+            }
+            if (!payload.EmailVerified)
+            {
+                return Results.BadRequest(new { errors = new[] { "Google account email is not verified." } });
+            }
+
+            var user = await userManager.FindByLoginAsync("Google", payload.Subject);
+            if (user is null)
+            {
+                // Auto-link by email: Google has already verified this address, so treat it
+                // as proof of ownership of any existing password account with the same email.
+                user = await userManager.FindByEmailAsync(payload.Email);
+                if (user is null)
+                {
+                    user = new ApplicationUser
+                    {
+                        Id = Guid.NewGuid(),
+                        UserName = payload.Email,
+                        Email = payload.Email,
+                        EmailConfirmed = true,
+                        DisplayName = payload.Name ?? payload.Email
+                    };
+                    var createResult = await userManager.CreateAsync(user);
+                    if (!createResult.Succeeded)
+                    {
+                        return Results.BadRequest(new { errors = createResult.Errors.Select(e => e.Description) });
+                    }
+                }
+                await userManager.AddLoginAsync(user, new UserLoginInfo("Google", payload.Subject, "Google"));
+            }
+
+            await signInManager.SignInAsync(user, isPersistent: true);
+            return Results.Ok(new UserResponse(user.Id, user.Email!, user.DisplayName));
+        });
+
         group.MapPost("/logout", async (SignInManager<ApplicationUser> signInManager) =>
         {
             await signInManager.SignOutAsync();

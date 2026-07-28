@@ -1,0 +1,35 @@
+# 0013. Google Sign-In via server-verified ID token, same cookie session as password login
+
+Date: 2026-07-28
+Status: Accepted
+
+## Context
+
+Berry Exchange currently offers exactly one way to authenticate: email + password against ASP.NET Core Identity, producing a `BerryExchange.Auth` session cookie (ADR-0004). Users increasingly expect a "Sign in with Google" option, but ADR-0004's constraint — same-origin serving, cookie sessions, no CORS anywhere in the app — narrows the design space: this can't become a redirect-based OAuth flow that bounces the browser to a separate callback origin, and it can't introduce JWT bearer tokens as a parallel auth mechanism living alongside cookies.
+
+Google's own client-side library (`Google Identity Services`, via `@react-oauth/google` on the frontend — Task 2) already solves the browser-side half of this without a redirect: it renders Google's button, runs the sign-in UI in a popup/One Tap flow, and on success hands the page a signed ID token (a JWT) directly — no server-side OAuth redirect dance, no separate origin involved. That leaves one open question: how does the API turn "the frontend has a Google ID token" into "the user has a Berry Exchange session," without deviating from ADR-0004's cookie-only, same-origin model, and without a way to construct real Google-signed JWTs in the automated test suite.
+
+## Decision
+
+A new endpoint, `POST /api/accounts/google`, accepts `{ "credential": "<google id token>" }` and ends in the exact same `SignInManager<ApplicationUser>.SignInAsync` call `/register` and `/login` already use — the resulting cookie is indistinguishable from a password login's. Token verification is isolated behind `IGoogleIdTokenValidator.ValidateAsync(string idToken) : Task<GoogleIdTokenPayload?>`, with two implementations selected in `Program.cs` by whether `Authentication:Google:ClientId` is configured:
+
+- **`GoogleIdTokenValidator`** — the real implementation, calling `GoogleJsonWebSignature.ValidateAsync` (NuGet `Google.Apis.Auth`) with the configured Client ID as the expected audience, returning `null` on any `InvalidJwtException` rather than throwing.
+- **`NullGoogleIdTokenValidator`** — a no-op that always returns `null`, registered whenever no Client ID is configured (local dev before the Google Cloud OAuth client exists, or CI). Following ADR-0009/0010/0011/0012's established graceful-degradation pattern, the endpoint keeps working — it always 401s — rather than the app failing to start or the endpoint throwing at request time.
+
+This interface seam also solves the testability problem directly: real Google ID tokens are opaque signed JWTs that a test can't construct without a live Google key exchange, so `ApiTestFixture` overrides the DI registration with `FakeGoogleIdTokenValidator`, a test double that treats the "credential" string as a JSON-encoded `GoogleIdTokenPayload` instead of a JWT — tests build the exact payload they want to exercise directly, and the literal string `"invalid-token"` simulates a signature failure.
+
+Account resolution follows Google's own recommended linking strategy: look up by external login (`UserManager.FindByLoginAsync("Google", payload.Subject)`) first; if that finds nothing, fall back to matching by email (`FindByEmailAsync`) and auto-link via `AddLoginAsync` — treating Google's own `email_verified` claim as proof of ownership of any existing password account with that address — otherwise create a new `ApplicationUser` with `EmailConfirmed = true`. A payload with `EmailVerified == false` is rejected with `400` before any account lookup happens, so an unverified Google address can never be used to claim or create an account.
+
+## Consequences
+
+The frontend never talks to Google's token/userinfo endpoints or handles an OAuth `code`/`state` exchange — it only renders Google's button and forwards the ID token it already receives client-side to this one endpoint, keeping the "same-origin, cookie-session, no CORS" shape from ADR-0004 completely intact. There is no new cross-origin surface: the browser's only network calls are to Google's own script (loading the button) and to `POST /api/accounts/google` on Berry Exchange's own origin.
+
+Because verification is fully mocked out behind `IGoogleIdTokenValidator` in tests, the automated suite (`GoogleLoginEndpointsTests`) exercises the full account-linking and cookie-issuing logic — new user creation, linking to an existing password account, repeat sign-in reusing the linked account, invalid-token rejection, unverified-email rejection — without ever making a network call to Google or needing a real Client ID. The cost mirrors ADR-0011's accepted gap for `AnthropicGenerativeAi`: `GoogleIdTokenValidator` itself (the thin wrapper around `GoogleJsonWebSignature.ValidateAsync`) is compiled and type-checked but not exercised by an automated test against a real Google-signed token; that is verified manually, with a real Client ID, as a separate task (Task 4 of the Google Sign-In plan).
+
+Auto-linking by verified email is a deliberate trust decision: it means a user who registered with a password and later signs in with Google using the same address is merged into one account rather than ending up with two. The mitigating factor is that Google has already verified the email server-side (`email_verified` on the ID token, checked before any lookup) — this codebase treats that the same way it would treat a user proving control of an email address through any other verified channel.
+
+Alternatives considered:
+
+- **Redirect-based OAuth 2.0 authorization-code flow** — rejected. It requires a callback endpoint and, typically, a distinct redirect URI/origin step that sits awkwardly against ADR-0004's same-origin constraint and would be considerably more moving parts (state/PKCE handling, code exchange) than Google Identity Services' direct-ID-token flow needs for this use case.
+- **JWT bearer tokens issued by Berry Exchange itself for Google-authenticated users, cookies for password users** — rejected. Running two parallel auth mechanisms would reintroduce exactly the token-storage/XSS trade-off ADR-0004 rejected, for no benefit — `SignInManager.SignInAsync` already produces a normal Identity cookie regardless of how the user proved their identity.
+- **Require an exact display-name/email match before linking, or never auto-link at all** — rejected. Never auto-linking would force a user into two disconnected accounts (one password, one Google) for the same real-world identity, which is worse UX than trusting Google's own `email_verified` claim as sufficient proof of address ownership.
