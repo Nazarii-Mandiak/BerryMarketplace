@@ -14,7 +14,7 @@ public sealed class AnthropicChatAgentModel : IChatAgentModel
     {
         var response = await _client.Messages.Create(new MessageCreateParams
         {
-            Model = "claude-opus-5",
+            Model = "claude-haiku-4-5-20251001",
             MaxTokens = 4096,
             System = new List<TextBlockParam> { new() { Text = systemPrompt } },
             Tools = BuildTools(tools),
