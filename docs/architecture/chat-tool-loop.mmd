@@ -1,0 +1,41 @@
+%% Berry Exchange — Phase 5: agentic chat tool-calling loop (Task 21)
+sequenceDiagram
+    participant Buyer as Buyer (Browser)
+    participant Widget as SPA Chat Widget
+    participant API as POST /api/chat/conversations/{id}/messages (SSE)
+    participant Loop as ChatAgent loop
+    participant Claude as Claude (IChatAgentModel)
+    participant Tools as ChatToolExecutor
+    participant Svc as Listings / Reservations services
+    participant DB as PostgreSQL
+
+    Buyer->>Widget: type a message, send
+    Widget->>API: POST content (opens SSE stream)
+    API->>DB: append user ChatMessage
+    API->>Loop: RunAsync(userId, history)
+
+    loop up to MaxIterations
+        Loop->>Claude: NextTurnAsync(systemPrompt, tools, history)
+        Claude-->>Loop: AgentTurn (text? + tool_use[])
+        opt tool calls present
+            Loop--)API: yield AgentToolCallEvent(name)
+            API--)Widget: data: {"type":"tool_call", "name": ...}
+            Loop->>Tools: ExecuteAsync(userId, call)
+            Tools->>Svc: search / get / check / reserve
+            Svc->>DB: query / mutate
+            DB-->>Svc: result
+            Svc-->>Tools: result
+            Tools-->>Loop: AgentToolResult
+            Note over Loop: tool results appended to history<br/>as AgentToolResults, fed back next iteration
+        end
+        opt final text (no tool calls)
+            Loop--)API: yield AgentTextEvent(text)
+            API--)Widget: data: {"type":"text", "text": ...}
+        end
+    end
+
+    Note over Loop: MaxIterations exceeded -> emits<br/>"too many steps" AgentTextEvent as the closing message
+
+    API->>DB: append assistant ChatMessage (joined text parts)
+    API--)Widget: data: {"type":"done"}
+    Widget-->>Buyer: render streamed tool calls + final reply

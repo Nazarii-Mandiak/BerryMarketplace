@@ -3,6 +3,8 @@ erDiagram
     USER ||--o{ LISTING : sells
     USER ||--o{ RESERVATION : buys
     LISTING ||--o{ RESERVATION : "reserved via"
+    USER ||--o{ CHAT_CONVERSATION : starts
+    CHAT_CONVERSATION ||--o{ CHAT_MESSAGE : contains
 
     USER {
         uuid id PK
@@ -30,4 +32,17 @@ erDiagram
         int quantity
         string status
         timestamptz reserved_at
+    }
+    CHAT_CONVERSATION {
+        uuid id PK
+        uuid user_id FK
+        string title
+        timestamptz created_at
+    }
+    CHAT_MESSAGE {
+        uuid id PK
+        uuid conversation_id FK
+        string role
+        string content
+        timestamptz created_at
     }
