@@ -1,7 +1,8 @@
 export interface ChatStreamEvent {
-  type: 'text' | 'tool_call' | 'done';
+  type: 'text' | 'tool_call' | 'done' | 'error';
   text?: string;
   name?: string;
+  message?: string;
 }
 
 // Pull complete `data: {...}\n\n` frames off the front of the buffer;

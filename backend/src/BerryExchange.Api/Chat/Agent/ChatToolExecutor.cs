@@ -31,6 +31,12 @@ public sealed class ChatToolExecutor : IChatToolExecutor
             };
             return new AgentToolResult(call.Id, content, isError);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // A real client-disconnect cancellation - propagate it instead of narrating
+            // it to the model as a failed tool call.
+            throw;
+        }
         catch (Exception ex)
         {
             return new AgentToolResult(call.Id, $"Tool failed: {ex.Message}", IsError: true);
@@ -73,9 +79,13 @@ public sealed class ChatToolExecutor : IChatToolExecutor
             return ("The user has not confirmed this reservation. Ask them to confirm the exact listing first.", true);
         }
         var result = await _reservations.ReserveAsync(ParseId(input), userId, ct);
-        return result.Succeeded
-            ? ($"Reserved one pint. Reservation id: {result.Reservation!.Id}.", false)
-            : ("This listing is sold out.", true);
+        return result.Outcome switch
+        {
+            ReserveOutcome.Success => ($"Reserved one pint. Reservation id: {result.Reservation!.Id}.", false),
+            ReserveOutcome.NotFound => ("No listing with that id.", true),
+            ReserveOutcome.OwnListing => ("You cannot reserve your own listing.", true),
+            _ => ("This listing is sold out.", true),
+        };
     }
 
     private static Guid ParseId(JsonElement input) => Guid.Parse(input.GetProperty("listing_id").GetString()!);

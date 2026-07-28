@@ -1,10 +1,11 @@
-%% Berry Exchange — supplementary: listing.created -> AI worker enrichment flow (Phase 2 skeleton)
+%% Berry Exchange — supplementary: listing.created -> AI worker enrichment flow
 sequenceDiagram
     participant Grower as Grower (Browser)
     participant API as Listings API
     participant DB as PostgreSQL
     participant MQ as RabbitMQ (berry.events)
     participant Worker as AI Worker (ai-enrichment queue)
+    participant Claude as Claude API (claude-opus-5)
 
     Grower->>API: POST /api/listings
     API->>DB: INSERT listing
@@ -12,7 +13,16 @@ sequenceDiagram
     API-->>Grower: 201 Created
     API--)MQ: publish listing.created (best-effort, post-commit)
     MQ--)Worker: deliver listing.created (bound to ai-enrichment queue)
-    Note over Worker: LoggingListingCreatedHandler.HandleAsync<br/>logs for now - Phase 3/4 swaps in real enrichment
+    Note over Worker: EnrichingListingCreatedHandler.HandleAsync
+    Worker->>Worker: ITextEmbedder.Embed(berryType + farmName + note)<br/>(SmartComponents.LocalEmbeddings, 384-dim, local - no API call)
+    opt IGenerativeAi.IsEnabled
+        Worker->>Claude: GenerateTastingNotesAsync(berryType, farmName, note)
+        Claude-->>Worker: tasting note (or failure - logged as a warning, embedding still lands)
+    end
+    Worker->>API: POST /api/internal/listings/{id}/enrichment<br/>{embedding, tastingNotes}<br/>(X-Internal-ApiKey: shared secret)
+    API->>DB: UPDATE listing SET embedding, aiTastingNotes
+    DB-->>API: committed
+    API-->>Worker: 204 No Content
     alt handler succeeds
         Worker--)MQ: ack
     else handler throws

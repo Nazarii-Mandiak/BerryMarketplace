@@ -49,7 +49,7 @@ public class BerryExchangeDbContext : IdentityDbContext<ApplicationUser, Identit
         builder.Entity<ChatMessage>(entity =>
         {
             entity.Property(m => m.Role).HasMaxLength(16).IsRequired();
-            entity.Property(m => m.Content).IsRequired();
+            entity.Property(m => m.Content).HasMaxLength(4000).IsRequired();
             entity.HasOne<ChatConversation>().WithMany().HasForeignKey(m => m.ConversationId);
             entity.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         });

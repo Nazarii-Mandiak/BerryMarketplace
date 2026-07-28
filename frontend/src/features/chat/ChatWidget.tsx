@@ -35,6 +35,8 @@ export function ChatWidget({ isAuthenticated }: { isAuthenticated: boolean }) {
           setMessages((m) => [...m, { role: 'status', content: `Using ${event.name}…` }]);
         } else if (event.type === 'text' && event.text) {
           setMessages((m) => [...m, { role: 'assistant', content: event.text! }]);
+        } else if (event.type === 'error') {
+          setMessages((m) => [...m, { role: 'status', content: event.message ?? 'Something went wrong. Try again.' }]);
         }
       });
     } catch {

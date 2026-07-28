@@ -94,7 +94,11 @@ export function MarketPage() {
   async function runSmartSearch() {
     const q = search.trim();
     if (!q) return;
-    setSmartSearch(await searchListings(q));
+    try {
+      setSmartSearch(await searchListings(q));
+    } catch {
+      showToast('Smart search failed — try again.');
+    }
   }
 
   function renderCard(listing: ListingResponse) {

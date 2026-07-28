@@ -13,3 +13,4 @@ docker-compose*.yaml
 Dockerfile*
 appsettings*.json
 **/Migrations/*.cs
+k8s/*.yaml

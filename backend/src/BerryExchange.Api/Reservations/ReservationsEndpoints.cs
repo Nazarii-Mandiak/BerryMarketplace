@@ -10,25 +10,19 @@ public static class ReservationsEndpoints
             Guid listingId,
             HttpContext http,
             ReservationsService reservationsService,
-            ListingsService listingsService,
             CancellationToken ct) =>
         {
             var buyerId = Guid.Parse(http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 
-            var listing = await listingsService.GetByIdAsync(listingId, ct);
-            if (listing is null)
-            {
-                return Results.NotFound();
-            }
-            if (listing.SellerId == buyerId)
-            {
-                return Results.BadRequest(new { error = "You cannot reserve your own listing." });
-            }
-
             var result = await reservationsService.ReserveAsync(listingId, buyerId, ct);
-            return result.Succeeded
-                ? Results.Created($"/api/reservations/{result.Reservation!.Id}", ReservationResponse.FromEntity(result.Reservation))
-                : Results.Conflict(new { error = "Sold out." });
+            return result.Outcome switch
+            {
+                ReserveOutcome.Success => Results.Created(
+                    $"/api/reservations/{result.Reservation!.Id}", ReservationResponse.FromEntity(result.Reservation)),
+                ReserveOutcome.NotFound => Results.NotFound(),
+                ReserveOutcome.OwnListing => Results.BadRequest(new { error = "You cannot reserve your own listing." }),
+                _ => Results.Conflict(new { error = "Sold out." }),
+            };
         }).RequireAuthorization();
 
         app.MapGet("/api/reservations/mine", async (
