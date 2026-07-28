@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using BerryExchange.Api.Chat.Agent;
 using BerryExchange.AiCore;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BerryExchange.Api.Chat;
 
@@ -10,9 +11,17 @@ public record SendChatMessageRequest(string Content);
 
 public static class ChatEndpoints
 {
+    // Matches the ChatMessage.Content column's HasMaxLength(4000) (BerryExchangeDbContext).
+    private const int MaxContentLength = 4000;
+
+    // Bounds the cost of replaying history to Claude on every turn: without this, a long
+    // conversation's per-message cost grows quadratically (each new turn resends every
+    // prior turn). Only the most recent messages are replayed; older context is dropped.
+    private const int MaxHistoryMessages = 20;
+
     public static void MapChatEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/chat").RequireAuthorization();
+        var group = app.MapGroup("/api/chat").RequireAuthorization().RequireRateLimiting("llm");
 
         group.MapGet("/conversations", async (HttpContext http, ChatService chat, CancellationToken ct) =>
         {
@@ -41,14 +50,18 @@ public static class ChatEndpoints
             SendChatMessageRequest request, HttpContext http, ChatService chat, ChatAgent agent,
             IGenerativeAi ai, ILogger<Program> logger, CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(request.Content))
+            {
+                return Results.BadRequest(new { errors = new[] { "Content is required." } });
+            }
+            if (request.Content.Length > MaxContentLength)
+            {
+                return Results.BadRequest(new { errors = new[] { $"Content must be {MaxContentLength} characters or fewer." } });
+            }
             if (!ai.IsEnabled)
             {
                 return Results.Json(new { errors = new[] { "AI chat is disabled: no Anthropic API key is configured." } },
                     statusCode: StatusCodes.Status503ServiceUnavailable);
-            }
-            if (string.IsNullOrWhiteSpace(request.Content))
-            {
-                return Results.BadRequest(new { errors = new[] { "Content is required." } });
             }
 
             var userId = GetUserId(http);
@@ -56,8 +69,11 @@ public static class ChatEndpoints
 
             await chat.AppendMessageAsync(conversationId, "user", request.Content.Trim(), ct);
             // Text-only history replay (documented simplification in ADR-0011): tool traffic
-            // from earlier turns is not persisted, so it is not replayed.
+            // from earlier turns is not persisted, so it is not replayed. Bounded to the most
+            // recent MaxHistoryMessages so per-turn replay cost doesn't grow unboundedly (and
+            // quadratically across a long conversation).
             var history = (await chat.GetMessagesAsync(conversationId, userId, ct))!
+                .TakeLast(MaxHistoryMessages)
                 .Select(m => m.Role == "user"
                     ? (AgentHistoryItem)new AgentUserMessage(m.Content)
                     : new AgentAssistantTurn(m.Content, []))
@@ -65,6 +81,10 @@ public static class ChatEndpoints
 
             http.Response.Headers.ContentType = "text/event-stream";
             http.Response.Headers.CacheControl = "no-cache";
+            // Belt-and-braces alongside nginx.conf's proxy_buffering off: nginx honors this
+            // per-response header as well, so the stream still flushes incrementally even if
+            // the proxy config regresses.
+            http.Response.Headers["X-Accel-Buffering"] = "no";
 
             var assistantParts = new List<string>();
             try

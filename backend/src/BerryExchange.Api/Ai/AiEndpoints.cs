@@ -1,18 +1,27 @@
 using BerryExchange.AiCore;
 using BerryExchange.Api.Listings;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BerryExchange.Api.Ai;
 
 public static class AiEndpoints
 {
+    // A generous cap on the free-text note a grower pastes into the listing assistant -
+    // large enough for genuine notes, small enough to bound the prompt sent to Claude.
+    private const int MaxNoteLength = 2000;
+
     public static void MapAiEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/ai");
+        var group = app.MapGroup("/api/ai").RequireRateLimiting("llm");
         group.MapGet("/status", (IGenerativeAi ai) => Results.Ok(new { enabled = ai.IsEnabled }));
 
         group.MapPost("/listing-assist", async (ListingDraft draft, IGenerativeAi ai,
             ListingsService listings, CancellationToken ct) =>
         {
+            if (draft.Note is { Length: > MaxNoteLength })
+            {
+                return Results.BadRequest(new { errors = new[] { $"Note must be {MaxNoteLength} characters or fewer." } });
+            }
             if (!ai.IsEnabled)
             {
                 return Results.Json(new { errors = new[] { "AI features are disabled: no Anthropic API key is configured." } },

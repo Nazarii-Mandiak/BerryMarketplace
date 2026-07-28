@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using BerryExchange.Api.Accounts;
 using BerryExchange.Api.Ai;
 using BerryExchange.Api.Chat;
@@ -6,6 +8,7 @@ using BerryExchange.Api.Infrastructure.Messaging;
 using BerryExchange.Api.Listings;
 using BerryExchange.Api.Reservations;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Pgvector.EntityFrameworkCore;
 
@@ -55,6 +58,27 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// Any registered account (registration is open) can otherwise drive unbounded Claude API
+// spend by hammering the two LLM-backed endpoint groups. A modest fixed-window limiter,
+// partitioned per authenticated user (falling back to client IP for the anonymous
+// /api/ai/status check), is enough for a showcase - not tuned precision, just a backstop.
+builder.Services.AddRateLimiter(limiterOptions =>
+{
+    limiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    limiterOptions.AddPolicy("llm", httpContext =>
+    {
+        var partitionKey = httpContext.User.Identity?.IsAuthenticated == true
+            ? httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous"
+            : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        });
+    });
+});
 
 builder.Services.AddScoped<ListingsService>();
 builder.Services.AddScoped<ReservationsService>();
@@ -124,6 +148,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapAccountsEndpoints();
 app.MapListingsEndpoints();

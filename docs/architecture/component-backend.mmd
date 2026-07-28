@@ -2,7 +2,7 @@
 graph LR
     subgraph API["ASP.NET Core Web API"]
         direction TB
-        Endpoints["Minimal API endpoints<br/>(Listings, Reservations, Accounts)"]
+        Endpoints["Minimal API endpoints<br/>(Listings, Reservations, Accounts, Ai, Chat)"]
         subgraph App["Application layer"]
             ListingsSvc[ListingsService]
             ResSvc[ReservationsService]
@@ -15,15 +15,18 @@ graph LR
         end
         Infra["Infrastructure<br/>EF Core DbContext, Identity stores, Migrations"]
         Messaging["Messaging (IEventPublisher)"]
-        Ai["Ai module<br/>(/api/ai/status, listing assistant)"]
+        Ai["Ai module<br/>(/api/ai/status, listing assistant,<br/>InternalEnrichmentEndpoints enrichment write-back)"]
+        Chat["Chat module<br/>(ChatService, ChatAgent tool-calling loop,<br/>ChatToolExecutor, AnthropicChatAgentModel)"]
     end
     AiCore["BerryExchange.AiCore (embeddings + generative AI)<br/>ITextEmbedder / LocalTextEmbedder<br/>IGenerativeAi / AnthropicGenerativeAi / DisabledGenerativeAi<br/>shared with AiWorker"]
     DB[("PostgreSQL<br/>+ pgvector")]
     Broker[("RabbitMQ<br/>berry.events exchange")]
-    Claude[("Claude API<br/>claude-opus-5")]
+    ClaudeOpus[("Claude API<br/>claude-opus-5<br/>listing assist + tasting notes")]
+    ClaudeHaiku[("Claude API<br/>claude-haiku-4-5-20251001<br/>agentic chat")]
 
     Endpoints --> App
     Endpoints --> Ai
+    Endpoints --> Chat
     App --> Domain
     App --> Infra
     Infra --> DB
@@ -31,4 +34,8 @@ graph LR
     Messaging --> Broker
     App --> AiCore
     Ai --> AiCore
-    AiCore --> Claude
+    Ai --> Infra
+    Chat --> App
+    Chat --> Infra
+    Chat --> ClaudeHaiku
+    AiCore --> ClaudeOpus
