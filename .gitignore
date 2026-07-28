@@ -1,8 +1,11 @@
 # OS
 .DS_Store
 
-# AI tooling (personal, not part of the product)
-.claude/
+# AI tooling (personal, not part of the product) -- except .claude/skills/,
+# which holds the UI-design plugin used for this project's frontend work
+# and is deliberately tracked.
+.claude/*
+!.claude/skills/
 .superpowers/
 
 # Node
