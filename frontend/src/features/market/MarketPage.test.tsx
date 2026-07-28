@@ -102,6 +102,15 @@ describe('MarketPage', () => {
     expect(screen.getByText('Candy-sweet.')).toBeInTheDocument();
   });
 
+  it('shows a distinct error message when the market fails to load, not "no results"', async () => {
+    vi.mocked(listingsApi.getListings).mockRejectedValue(new ApiError(0, ['Network error']));
+
+    renderWithProviders(<MarketPage />, { route: '/market' });
+
+    expect(await screen.findByText("Couldn't load the market — check your connection and try again.")).toBeInTheDocument();
+    expect(screen.queryByText('No crates match that search.')).not.toBeInTheDocument();
+  });
+
   it('shows a toast instead of an unhandled rejection when smart search fails', async () => {
     vi.mocked(listingsApi.getListings).mockResolvedValue(listings);
     vi.mocked(listingsApi.searchListings).mockRejectedValue(new ApiError(500, ['boom']));

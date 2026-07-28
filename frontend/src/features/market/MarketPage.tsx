@@ -17,7 +17,7 @@ function formatPrice(price: number): string {
 
 export function MarketPage() {
   const { data: user } = useCurrentUser();
-  const { data: listings, isLoading } = useQuery<ListingResponse[]>({
+  const { data: listings, isLoading, isError } = useQuery<ListingResponse[]>({
     queryKey: LISTINGS_QUERY_KEY,
     queryFn: getListings,
   });
@@ -217,7 +217,12 @@ export function MarketPage() {
         ) : (
           <div className="grid">
             {isLoading && <p className="empty-state">Loading the market…</p>}
-            {!isLoading && filtered.length === 0 && <p className="empty-state">No crates match that search.</p>}
+            {!isLoading && isError && (
+              <p className="empty-state">Couldn't load the market — check your connection and try again.</p>
+            )}
+            {!isLoading && !isError && filtered.length === 0 && (
+              <p className="empty-state">No crates match that search.</p>
+            )}
             {filtered.map((listing) => renderCard(listing))}
           </div>
         )}
