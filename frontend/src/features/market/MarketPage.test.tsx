@@ -101,4 +101,18 @@ describe('MarketPage', () => {
     expect(screen.getByText('Sweet Fields')).toBeInTheDocument();
     expect(screen.getByText('Candy-sweet.')).toBeInTheDocument();
   });
+
+  it('shows a toast instead of an unhandled rejection when smart search fails', async () => {
+    vi.mocked(listingsApi.getListings).mockResolvedValue(listings);
+    vi.mocked(listingsApi.searchListings).mockRejectedValue(new ApiError(500, ['boom']));
+    const user = userEvent.setup();
+
+    renderWithProviders(<MarketPage />, { route: '/market' });
+
+    await screen.findByRole('heading', { name: 'Strawberries' });
+    await user.type(screen.getByRole('searchbox'), 'sweet berries for jam');
+    await user.click(screen.getByRole('button', { name: /smart search/i }));
+
+    expect(await screen.findByText('Smart search failed — try again.')).toBeInTheDocument();
+  });
 });

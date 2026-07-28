@@ -14,6 +14,26 @@ public class ReservationsService
 
     public async Task<ReserveResult> ReserveAsync(Guid listingId, Guid buyerId, CancellationToken ct)
     {
+        // Ownership check lives here (not just in ReservationsEndpoints) so every caller -
+        // the HTTP endpoint, the chat tool executor, and any future caller - inherits it.
+        // A plain read is fine here (no atomicity requirement): it only ever rejects, it
+        // never authorizes a write, so a race against a concurrent listing edit can't turn
+        // this into an oversell - that guarantee still comes solely from the atomic UPDATE
+        // below.
+        var sellerId = await _db.Listings
+            .Where(l => l.Id == listingId)
+            .Select(l => (Guid?)l.SellerId)
+            .FirstOrDefaultAsync(ct);
+
+        if (sellerId is null)
+        {
+            return ReserveResult.NotFound;
+        }
+        if (sellerId == buyerId)
+        {
+            return ReserveResult.OwnListing;
+        }
+
         // The decrement UPDATE and the Reservation insert must commit or roll back
         // together: without an explicit transaction they'd be two separate implicit
         // transactions, and a crash/exception between them would leave stock
@@ -65,17 +85,28 @@ public class ReservationsService
     }
 }
 
+public enum ReserveOutcome
+{
+    Success,
+    SoldOut,
+    NotFound,
+    OwnListing,
+}
+
 public class ReserveResult
 {
-    public bool Succeeded { get; }
+    public ReserveOutcome Outcome { get; }
     public Reservation? Reservation { get; }
+    public bool Succeeded => Outcome == ReserveOutcome.Success;
 
-    private ReserveResult(bool succeeded, Reservation? reservation)
+    private ReserveResult(ReserveOutcome outcome, Reservation? reservation)
     {
-        Succeeded = succeeded;
+        Outcome = outcome;
         Reservation = reservation;
     }
 
-    public static ReserveResult Success(Reservation r) => new(true, r);
-    public static readonly ReserveResult SoldOut = new(false, null);
+    public static ReserveResult Success(Reservation r) => new(ReserveOutcome.Success, r);
+    public static readonly ReserveResult SoldOut = new(ReserveOutcome.SoldOut, null);
+    public static readonly ReserveResult NotFound = new(ReserveOutcome.NotFound, null);
+    public static readonly ReserveResult OwnListing = new(ReserveOutcome.OwnListing, null);
 }

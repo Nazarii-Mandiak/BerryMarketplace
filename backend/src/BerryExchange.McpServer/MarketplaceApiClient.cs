@@ -1,4 +1,6 @@
+using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace BerryExchange.McpServer;
 
@@ -31,9 +33,41 @@ public sealed class MarketplaceApiClient
         }
         await EnsureLoggedInAsync(ct);
         var response = await _http.PostAsync($"/api/listings/{listingId}/reservations", content: null, ct);
-        return response.IsSuccessStatusCode
-            ? "Reserved one pint."
+        if (response.IsSuccessStatusCode)
+        {
+            return "Reserved one pint.";
+        }
+
+        if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
+            // The Identity auth cookie has expired or been rejected - force the next call
+            // to log in again instead of failing permanently for the rest of the process.
+            _loggedIn = false;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        var message = ExtractErrorMessage(body);
+        return message is not null
+            ? $"Reservation failed: {message}"
             : $"Reservation failed with status {(int)response.StatusCode}.";
+    }
+
+    private static string? ExtractErrorMessage(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.String)
+            {
+                return error.GetString();
+            }
+        }
+        catch (JsonException)
+        {
+            // Not JSON (or not the shape we expect) - fall back to the status-code message.
+        }
+        return null;
     }
 
     private async Task EnsureLoggedInAsync(CancellationToken ct)

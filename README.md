@@ -21,6 +21,11 @@ component-backend, component-frontend, data model, plus sequence diagrams for
 the AI enrichment flow and the chat tool-calling loop) and `docs/adr/` for
 every architectural decision, including why each of these pieces exists.
 
+The root `vercel.json` deploys the SPA only (`frontend/`) to Vercel as a
+static preview — there is no hosted backend behind it, so API-dependent
+features won't work there; use the Docker or Kubernetes paths below for a
+full working stack.
+
 ## Quickstart (Docker)
 
     export ANTHROPIC_API_KEY=sk-ant-...   # optional; AI features degrade gracefully without it
@@ -100,6 +105,13 @@ commits, see ADR-0006):
     docker build -t berry-frontend:local frontend
     kind load docker-image berry-api:local berry-ai-worker:local berry-frontend:local
     kubectl apply -k k8s/
+
+Once every pod is `Running`/`Ready`, reach the frontend by port-forwarding its
+Service (there's no Ingress in this demo setup):
+
+    kubectl port-forward svc/frontend 8080:80
+
+    # Visit http://localhost:8080
 
 See `docs/adr/0008-containerization-and-ci.md` for the rationale.
 
