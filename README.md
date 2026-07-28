@@ -1,51 +1,110 @@
-# Berrow
+# Berrow (Berry Exchange)
 
-A berry marketplace — growers list fresh berries, buyers browse and reserve a pint, backed by a real API and database.
+A berry marketplace with an AI core: growers list fresh berries, buyers browse,
+search semantically, chat with an agent, and reserve pints — backed by a real
+API, database, message broker, and an async AI enrichment pipeline.
 
-## Features
+## Architecture
 
-- Browse listings with berry-type filter chips and a search box
-- Register/log in, then post a new listing (berry, farm, price, quantity, note)
-- Reserve a pint, which atomically decrements stock (see `docs/adr/`) and appears in your reservations
-- Bold, illustrated berry icons built as inline SVG (no external image assets)
+An ASP.NET Core modular monolith (`Accounts`, `Listings`, `Reservations`, `Ai`,
+`Chat`) sits in front of PostgreSQL with the `pgvector` extension. Creating a
+listing publishes a `listing.created` event to RabbitMQ, which a separate AI
+worker consumes to generate a tasting note and an embedding asynchronously —
+the API and the browsing/reservation flow never block on AI calls. A standalone
+MCP server exposes the marketplace as tools for agent clients (e.g. Claude
+Code), and a React + TypeScript SPA is the primary UI. Shared event contracts
+live in `BerryExchange.Contracts`; shared embeddings/generative-AI abstractions
+live in `BerryExchange.AiCore`, used by both the API and the worker.
 
-## Running it
+See `docs/architecture/*.mmd` for C4-style diagrams (context, container,
+component-backend, component-frontend, data model, plus sequence diagrams for
+the AI enrichment flow and the chat tool-calling loop) and `docs/adr/` for
+every architectural decision, including why each of these pieces exists.
 
-Requires the backend running first (see below), then:
+## Quickstart (Docker)
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+    export ANTHROPIC_API_KEY=sk-ant-...   # optional; AI features degrade gracefully without it
+    docker compose up --build
 
-Visit `http://localhost:5173`. The dev server proxies `/api/*` to the backend at `http://localhost:5091`.
+    # SPA:      http://localhost:5173
+    # API:      http://localhost:5091
+    # RabbitMQ: http://localhost:15672 (guest/guest)
 
-## Backend API
+This starts Postgres (with `pgvector`), RabbitMQ, the API, the AI worker, and
+the frontend. `ANTHROPIC_API_KEY` is optional — without it the stack still
+runs in full, AI features just report themselves as disabled (see below).
 
-The backend lives in `backend/` — an ASP.NET Core Web API over PostgreSQL. See `docs/superpowers/specs/2026-07-20-berry-exchange-architecture-design.md` for the full design and `docs/adr/` for the individual decisions.
+## AI features
 
-Run the backend:
+- **Listing-copy assistant** (`POST /api/ai/listing-assist`) — drafts a
+  polished title/description from a grower's rough notes before they publish.
+- **Async tasting notes + embeddings** — the AI worker listens for
+  `listing.created` events and generates a tasting note and a vector embedding
+  for each new listing in the background, via `BerryExchange.AiCore`.
+- **Semantic search** (`GET /api/listings/search`) — ranks listings by
+  embedding similarity when they have one; falls back transparently to a
+  keyword (`ILIKE`) search otherwise.
+- **Agentic chat** (`POST /api/chat/conversations/{id}/messages`) — a
+  streaming (SSE) conversational agent with a tool-calling loop over the
+  marketplace (search, listing lookup, availability, reservations).
 
-```bash
-cd backend
-dotnet run --project src/BerryExchange.Api --launch-profile http
-```
+All of these degrade gracefully when there's no Anthropic key or no RabbitMQ
+broker: the app falls back to `DisabledGenerativeAi`, a `NullEventPublisher`,
+and keyword-only search, so the app and its full test suite run with zero
+external configuration. Check `GET /api/ai/status` to see whether generative
+AI is currently enabled.
 
-Run the backend tests (requires Docker running locally, for the Testcontainers-based Postgres):
+## MCP server
 
-```bash
-cd backend
-dotnet test
-```
+`BerryExchange.McpServer` exposes the marketplace over stdio as four MCP
+tools — `search_listings`, `get_listing`, `check_availability`, and
+`create_reservation` — so any MCP-capable agent client can browse and act on
+the marketplace directly. Register it with Claude Code:
 
-## Frontend
+    claude mcp add berry-exchange -- dotnet run --project <repo>/backend/src/BerryExchange.McpServer
 
-The frontend lives in `frontend/` — a React + TypeScript SPA bundled with Vite. See `docs/superpowers/specs/2026-07-21-berry-exchange-frontend-design.md` for the design.
+`create_reservation` needs a dedicated marketplace account to act as: set the
+`BerryMcp__Email` / `BerryMcp__Password` env vars, or the tool responds with a
+"disabled" message instead of erroring.
 
-Run the frontend tests:
+## Development
 
-```bash
-cd frontend
-npm test
-```
+Run each service directly (outside Docker), starting with the backend:
+
+    cd backend
+    dotnet run --project src/BerryExchange.Api --launch-profile http
+
+    cd frontend
+    npm install
+    npm run dev
+
+Visit `http://localhost:5173` — the dev server proxies `/api/*` to the backend
+at `http://localhost:5091`.
+
+Run the tests:
+
+    cd backend && dotnet test    # requires Docker running locally (Testcontainers-based Postgres)
+    cd frontend && npm test && npm run lint && npm run build
+
+Install the git hooks (enforces ADR + diagram freshness on architecture
+commits, see ADR-0006):
+
+    git config core.hooksPath scripts/git-hooks
+
+## Kubernetes
+
+`k8s/` holds plain Kustomize manifests for a local demo on a `kind` cluster:
+
+    docker build -t berry-api:local -f backend/src/BerryExchange.Api/Dockerfile backend
+    docker build -t berry-ai-worker:local -f backend/src/BerryExchange.AiWorker/Dockerfile backend
+    docker build -t berry-frontend:local frontend
+    kind load docker-image berry-api:local berry-ai-worker:local berry-frontend:local
+    kubectl apply -k k8s/
+
+See `docs/adr/0008-containerization-and-ci.md` for the rationale.
+
+## Branching
+
+`development` is the standing integration branch; `feature/*` branches merge
+into it per-phase; `main` only receives finished, reviewed work. See
+`CONTRIBUTING.md` for the full workflow.
