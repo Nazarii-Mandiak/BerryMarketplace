@@ -8,15 +8,21 @@ graph TB
     end
     subgraph Backend
         API["ASP.NET Core Web API<br/>Berry Exchange"]
+        McpServer["BerryExchange.McpServer<br/>MCP server (stdio)<br/>search_listings, get_listing,<br/>check_availability, create_reservation"]
     end
     subgraph Data
         DB[("PostgreSQL")]
+    end
+    subgraph "External Agents"
+        McpClient(["MCP client<br/>(e.g. Claude Desktop, Claude Code)"])
     end
 
     Browser <-->|HTTPS| Proxy
     Proxy -->|serves SPA bundle| Browser
     Proxy -->|"/api/* reverse-proxied"| API
     API -->|"EF Core / Npgsql"| DB
+    McpClient -->|"stdio (JSON-RPC / MCP)"| McpServer
+    McpServer -->|"HTTP (public API)<br/>cookie auth for create_reservation"| API
 
     %% --- Local / demo topology (ADR-0008): docker-compose, no separate edge proxy ---
     subgraph "Docker Compose (local / demo stack)"
