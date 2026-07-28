@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: berry-config
+data:
+  RabbitMq__Host: rabbitmq
+  Api__BaseUrl: http://api:8080
+  Database__AutoMigrate: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: berry-secrets
+type: Opaque
+stringData:
+  ConnectionStrings__BerryExchangeDb: Host=postgres;Database=berryexchange;Username=berry;Password=berry
+  Internal__ApiKey: dev-internal-key
+  Anthropic__ApiKey: ""
