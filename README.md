@@ -29,6 +29,7 @@ full working stack.
 ## Quickstart (Docker)
 
     export ANTHROPIC_API_KEY=sk-ant-...   # optional; AI features degrade gracefully without it
+    export GOOGLE_CLIENT_ID=123...apps.googleusercontent.com   # optional; Google sign-in hides itself without it
     docker compose up --build
 
     # SPA:      http://localhost:5173
