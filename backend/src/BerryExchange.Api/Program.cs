@@ -74,6 +74,24 @@ else
         BerryExchange.AiCore.DisabledGenerativeAi>();
 }
 
+builder.Services.AddScoped<BerryExchange.Api.Chat.Agent.IChatToolExecutor,
+    BerryExchange.Api.Chat.Agent.ChatToolExecutor>();
+builder.Services.AddScoped<BerryExchange.Api.Chat.Agent.ChatAgent>(sp => new(
+    sp.GetRequiredService<BerryExchange.Api.Chat.Agent.IChatAgentModel>(),
+    sp.GetRequiredService<BerryExchange.Api.Chat.Agent.IChatToolExecutor>()));
+if (!string.IsNullOrEmpty(anthropicApiKey))
+{
+    builder.Services.AddSingleton<BerryExchange.Api.Chat.Agent.IChatAgentModel>(
+        new BerryExchange.Api.Chat.Agent.AnthropicChatAgentModel(anthropicApiKey));
+}
+else
+{
+    // Endpoint 503s before resolving the agent when AI is disabled, but DI still
+    // needs a registration for test overrides to Replace.
+    builder.Services.AddSingleton<BerryExchange.Api.Chat.Agent.IChatAgentModel>(
+        new BerryExchange.Api.Chat.Agent.ThrowingChatAgentModel());
+}
+
 if (!string.IsNullOrEmpty(builder.Configuration["RabbitMq:Host"]))
 {
     builder.Services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();

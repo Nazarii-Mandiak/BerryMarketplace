@@ -19,3 +19,10 @@ public interface IChatToolExecutor
 {
     Task<AgentToolResult> ExecuteAsync(Guid userId, AgentToolCall call, CancellationToken ct);
 }
+
+public sealed class ThrowingChatAgentModel : IChatAgentModel
+{
+    public Task<AgentTurn> NextTurnAsync(string systemPrompt, IReadOnlyList<AgentToolDefinition> tools,
+        IReadOnlyList<AgentHistoryItem> history, CancellationToken ct) =>
+        throw new InvalidOperationException("AI chat is disabled: no Anthropic API key configured.");
+}
