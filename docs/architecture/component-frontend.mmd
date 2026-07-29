@@ -10,11 +10,15 @@ graph LR
             Auth["Auth feature<br/>login/register"]
         end
         ApiClient["API client layer<br/>(TanStack Query + fetch wrapper)"]
-        UI["Shared UI kit<br/>(design tokens from index.html: colors, buttons, chips, cards)"]
+        UI["Shared UI kit<br/>(design tokens from global.css: colors, buttons, chips, cards)"]
+        Theme["ThemeProvider / ThemeToggle<br/>(light/dark/system, .dark class + localStorage)"]
+        Glow["GlowingEffect<br/>(pointer-tracked card border, motion)"]
     end
     API[("Berry Exchange API")]
 
     Routes --> Features
     Features --> ApiClient
     Features --> UI
+    UI --> Theme
+    UI --> Glow
     ApiClient -->|"HTTPS JSON"| API

@@ -366,6 +366,11 @@ svg { display: block; }
   gap: 22px;
   padding-bottom: 10px;
 }
+.card-glow {
+  position: relative;
+  border-radius: var(--radius);
+  height: 100%;
+}
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
