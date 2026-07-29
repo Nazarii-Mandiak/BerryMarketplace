@@ -7,6 +7,7 @@ graph LR
             ListingsSvc[ListingsService]
             ResSvc[ReservationsService]
             AccountsSvc["AccountsService (wraps Identity)"]
+            GoogleAuth["IGoogleIdTokenValidator<br/>GoogleIdTokenValidator / NullGoogleIdTokenValidator"]
         end
         subgraph Domain["Domain"]
             ListingEntity[Listing]
@@ -23,8 +24,10 @@ graph LR
     Broker[("RabbitMQ<br/>berry.events exchange")]
     ClaudeOpus[("Claude API<br/>claude-opus-5<br/>listing assist + tasting notes")]
     ClaudeHaiku[("Claude API<br/>claude-haiku-4-5-20251001<br/>agentic chat")]
+    GoogleApi[("Google Identity Services<br/>ID token signature verification")]
 
     Endpoints --> App
+    GoogleAuth --> GoogleApi
     Endpoints --> Ai
     Endpoints --> Chat
     App --> Domain

@@ -47,6 +47,10 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface GoogleLoginRequest {
+  credential: string;
+}
+
 export interface RegisterRequest {
   email: string;
   password: string;

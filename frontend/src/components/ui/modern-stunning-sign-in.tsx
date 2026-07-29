@@ -1,8 +1,10 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { login } from '@/api/accounts';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { login, loginWithGoogle } from '@/api/accounts';
 import { ApiError } from '@/api/client';
+import type { UserResponse } from '@/api/types';
 import { CURRENT_USER_QUERY_KEY } from '@/features/auth/useCurrentUser';
 import { BerryIcon } from '@/components/BerryIcon';
 
@@ -17,23 +19,34 @@ const SignIn1 = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  function handleSignedIn(user: UserResponse) {
+    queryClient.setQueryData(CURRENT_USER_QUERY_KEY, user);
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/market';
+    navigate(from, { replace: true });
+  }
+
+  function handleAuthError(err: unknown, invalidCredentialsMessage: string) {
+    if (err instanceof ApiError && err.status === 401) {
+      setError(invalidCredentialsMessage);
+    } else if (err instanceof ApiError) {
+      setError(err.errors[0] ?? 'Something went wrong — try again.');
+    } else {
+      setError('Something went wrong — try again.');
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: () => login({ email, password }),
-    onSuccess: (user) => {
-      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, user);
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/market';
-      navigate(from, { replace: true });
-    },
-    onError: (err) => {
-      if (err instanceof ApiError && err.status === 401) {
-        setError('Invalid email or password.');
-      } else if (err instanceof ApiError) {
-        setError(err.errors[0] ?? 'Something went wrong — try again.');
-      } else {
-        setError('Something went wrong — try again.');
-      }
-    },
+    onSuccess: handleSignedIn,
+    onError: (err) => handleAuthError(err, 'Invalid email or password.'),
+  });
+
+  const googleMutation = useMutation({
+    mutationFn: (credential: string) => loginWithGoogle({ credential }),
+    onSuccess: handleSignedIn,
+    onError: (err) => handleAuthError(err, 'Google sign-in failed — try again.'),
   });
 
   function handleSubmit(e: FormEvent) {
@@ -48,6 +61,15 @@ const SignIn1 = () => {
     }
     setError('');
     mutation.mutate();
+  }
+
+  function handleGoogleSuccess(credentialResponse: CredentialResponse) {
+    if (!credentialResponse.credential) {
+      setError('Google sign-in failed — try again.');
+      return;
+    }
+    setError('');
+    googleMutation.mutate(credentialResponse.credential);
   }
 
   return (
@@ -102,6 +124,25 @@ const SignIn1 = () => {
             {mutation.isPending ? 'Logging in…' : 'Log in'}
           </button>
         </form>
+
+        {googleClientId && (
+          <>
+            <div className="flex items-center gap-3 w-full my-5">
+              <hr className="flex-1 border-[var(--line)]" />
+              <span className="text-xs text-[var(--ink-muted)]">or</span>
+              <hr className="flex-1 border-[var(--line)]" />
+            </div>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google sign-in failed — try again.')}
+              theme="outline"
+              shape="pill"
+              size="large"
+              text="continue_with"
+              width="320"
+            />
+          </>
+        )}
 
         <div className="w-full text-center mt-5">
           <span className="text-xs text-[var(--ink-muted)]">

@@ -29,6 +29,7 @@ full working stack.
 ## Quickstart (Docker)
 
     export ANTHROPIC_API_KEY=sk-ant-...   # optional; AI features degrade gracefully without it
+    export GOOGLE_CLIENT_ID=123...apps.googleusercontent.com   # optional; Google sign-in hides itself without it
     docker compose up --build
 
     # SPA:      http://localhost:5173
@@ -85,6 +86,13 @@ Run each service directly (outside Docker), starting with the backend:
 
 Visit `http://localhost:5173` — the dev server proxies `/api/*` to the backend
 at `http://localhost:5091`.
+
+Google sign-in needs the Client ID configured on both sides: the frontend
+picks up `VITE_GOOGLE_CLIENT_ID` from `frontend/.env`, but outside Docker the
+backend has no equivalent — set `export Authentication__Google__ClientId=<client id>`
+before running `dotnet run`, or the button will show up but every sign-in
+attempt will 401. Leaving it unset is also fine: the backend just treats
+Google sign-in as a safe default of "off".
 
 Run the tests:
 

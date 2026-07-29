@@ -1,8 +1,15 @@
 import { apiRequest } from './client';
-import type { LoginRequest, RegisterRequest, UserResponse } from './types';
+import type { GoogleLoginRequest, LoginRequest, RegisterRequest, UserResponse } from './types';
 
 export function login(request: LoginRequest): Promise<UserResponse> {
   return apiRequest<UserResponse>('/accounts/login', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export function loginWithGoogle(request: GoogleLoginRequest): Promise<UserResponse> {
+  return apiRequest<UserResponse>('/accounts/google', {
     method: 'POST',
     body: JSON.stringify(request),
   });

@@ -1,6 +1,9 @@
+using BerryExchange.Api.Accounts;
 using BerryExchange.Api.Infrastructure;
+using BerryExchange.Api.Tests.Accounts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,6 +37,12 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 ["ConnectionStrings:BerryExchangeDb"] = _postgres.GetConnectionString()
             });
+        });
+        builder.ConfigureTestServices(services =>
+        {
+            // Registered after Program.cs's own IGoogleIdTokenValidator registration, so this
+            // wins when the container resolves it - tests never depend on a real Google credential.
+            services.AddSingleton<IGoogleIdTokenValidator, FakeGoogleIdTokenValidator>();
         });
     }
 
