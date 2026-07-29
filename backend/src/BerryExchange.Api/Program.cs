@@ -59,6 +59,16 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddAuthorization();
 
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+if (!string.IsNullOrEmpty(googleClientId))
+{
+    builder.Services.AddSingleton<IGoogleIdTokenValidator>(new GoogleIdTokenValidator(googleClientId));
+}
+else
+{
+    builder.Services.AddSingleton<IGoogleIdTokenValidator, NullGoogleIdTokenValidator>();
+}
+
 // Any registered account (registration is open) can otherwise drive unbounded Claude API
 // spend by hammering the two LLM-backed endpoint groups. A modest fixed-window limiter,
 // partitioned per authenticated user (falling back to client IP for the anonymous

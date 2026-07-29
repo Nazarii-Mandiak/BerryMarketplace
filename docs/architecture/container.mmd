@@ -27,8 +27,8 @@ graph TB
     %% --- Local / demo topology (ADR-0008): docker-compose, no separate edge proxy ---
     subgraph "Docker Compose (local / demo stack)"
         ComposeBrowser["Browser<br/>(developer machine)"]
-        FrontendContainer["frontend container<br/>nginx: serves built SPA bundle<br/>and proxies /api/ to api"]
-        ApiContainer["api container<br/>ASP.NET Core Web API<br/>(Database:AutoMigrate=true)"]
+        FrontendContainer["frontend container<br/>nginx: serves built SPA bundle<br/>and proxies /api/ to api<br/>(built with VITE_GOOGLE_CLIENT_ID)"]
+        ApiContainer["api container<br/>ASP.NET Core Web API<br/>(Database:AutoMigrate=true,<br/>Authentication:Google:ClientId)"]
         PostgresContainer[("postgres container<br/>pgvector/pgvector:pg16")]
         RabbitMqContainer{{"rabbitmq container<br/>rabbitmq:4-management<br/>berry.events topic exchange"}}
         AiWorkerContainer["ai-worker container<br/>.NET Worker Service<br/>(BerryExchange.AiWorker)"]
