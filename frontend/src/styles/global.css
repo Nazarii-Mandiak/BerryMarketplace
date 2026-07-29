@@ -152,6 +152,29 @@ svg { display: block; }
 .site-nav a:hover, .site-nav a:focus-visible { background: var(--ink); color: var(--ground); }
 .auth-status { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 13.5px; white-space: nowrap; }
 
+.theme-toggle {
+  display: flex;
+  gap: 2px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 2px;
+}
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.theme-toggle-btn:hover { color: var(--primary); }
+.theme-toggle-btn.active { background: var(--ink); color: var(--ground); }
+.theme-toggle-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 /* hero */
 .hero {
   max-width: 1180px;
