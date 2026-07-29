@@ -6,14 +6,11 @@ import { ApiError } from '../../api/client';
 import { useCurrentUser } from '../auth/useCurrentUser';
 import { useToast } from '../../components/ToastProvider';
 import { BerryIcon } from '../../components/BerryIcon';
+import { ListingCard } from '../../components/ListingCard';
 import type { ListingResponse, SearchListingsResponse } from '../../api/types';
 
 const LISTINGS_QUERY_KEY = ['listings'];
 const HARVEST_BERRIES = ['Strawberries', 'Blueberries', 'Raspberries', 'Blackberries', 'Gooseberries'];
-
-function formatPrice(price: number): string {
-  return `$${price.toFixed(2)}/pt`;
-}
 
 export function MarketPage() {
   const { data: user } = useCurrentUser();
@@ -106,37 +103,29 @@ export function MarketPage() {
     const low = !soldOut && listing.quantityAvailable <= 5;
     const isOwnListing = user?.id === listing.sellerId;
     return (
-      <div className="card" key={listing.id}>
-        <div className="art">
-          <BerryIcon berryType={listing.berryType} />
-          <span className="price-tag">{formatPrice(listing.pricePerPint)}</span>
-        </div>
-        <div className="card-body">
-          <h3>{listing.berryType}</h3>
-          <span className="farm">{listing.farmName}</span>
-          {listing.note && <p className="note">{listing.note}</p>}
-          {listing.aiTastingNotes && (
-            <p className="tasting-notes">
-              <em>{listing.aiTastingNotes}</em>
-            </p>
-          )}
-          <div className="card-foot">
-            <span className={`qty${low ? ' low' : ''}`}>
-              {soldOut ? 'Sold out' : `${listing.quantityAvailable} pt${listing.quantityAvailable === 1 ? '' : 's'} left`}
-            </span>
-            {!isOwnListing && (
-              <button
-                type="button"
-                className="btn-buy"
-                disabled={soldOut || reserveMutation.isPending}
-                onClick={() => reserveMutation.mutate(listing.id)}
-              >
-                {soldOut ? 'Sold out' : 'Buy a pint'}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <ListingCard
+        key={listing.id}
+        berryType={listing.berryType}
+        farmName={listing.farmName}
+        pricePerPint={listing.pricePerPint}
+        note={listing.note}
+        aiTastingNotes={listing.aiTastingNotes}
+        glow
+      >
+        <span className={`qty${low ? ' low' : ''}`}>
+          {soldOut ? 'Sold out' : `${listing.quantityAvailable} pt${listing.quantityAvailable === 1 ? '' : 's'} left`}
+        </span>
+        {!isOwnListing && (
+          <button
+            type="button"
+            className="btn-buy"
+            disabled={soldOut || reserveMutation.isPending}
+            onClick={() => reserveMutation.mutate(listing.id)}
+          >
+            {soldOut ? 'Sold out' : 'Buy a pint'}
+          </button>
+        )}
+      </ListingCard>
     );
   }
 

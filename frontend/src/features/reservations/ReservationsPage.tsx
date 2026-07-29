@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { getMyReservations } from '../../api/reservations';
-import { BerryIcon } from '../../components/BerryIcon';
+import { ListingCard } from '../../components/ListingCard';
 import type { ReservationWithListingResponse } from '../../api/types';
 
 function formatDate(iso: string): string {
@@ -25,20 +25,15 @@ export function ReservationsPage() {
       )}
       <div className="grid">
         {reservations?.map((reservation) => (
-          <div className="card" key={reservation.id}>
-            <div className="art">
-              <BerryIcon berryType={reservation.berryType} />
-              <span className="price-tag">${reservation.pricePerPint.toFixed(2)}/pt</span>
-            </div>
-            <div className="card-body">
-              <h3>{reservation.berryType}</h3>
-              <span className="farm">{reservation.farmName}</span>
-              <div className="card-foot">
-                <span className="status-badge">{reservation.status}</span>
-                <span className="qty">{formatDate(reservation.reservedAt)}</span>
-              </div>
-            </div>
-          </div>
+          <ListingCard
+            key={reservation.id}
+            berryType={reservation.berryType}
+            farmName={reservation.farmName}
+            pricePerPint={reservation.pricePerPint}
+          >
+            <span className="status-badge">{reservation.status}</span>
+            <span className="qty">{formatDate(reservation.reservedAt)}</span>
+          </ListingCard>
         ))}
       </div>
     </section>
