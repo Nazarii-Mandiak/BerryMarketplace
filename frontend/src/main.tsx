@@ -8,7 +8,7 @@ import { ToastProvider } from './components/ToastProvider';
 import './styles/global.css';
 
 const queryClient = new QueryClient();
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const app = (
   <QueryClientProvider client={queryClient}>

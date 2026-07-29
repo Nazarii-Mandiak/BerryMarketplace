@@ -19,7 +19,7 @@ const SignIn1 = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   function handleSignedIn(user: UserResponse) {
     queryClient.setQueryData(CURRENT_USER_QUERY_KEY, user);
