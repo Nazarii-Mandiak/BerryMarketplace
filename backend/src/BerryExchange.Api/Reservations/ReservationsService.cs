@@ -12,7 +12,7 @@ public class ReservationsService
         _db = db;
     }
 
-    public async Task<ReserveResult> ReserveAsync(Guid listingId, Guid buyerId, CancellationToken ct)
+    public async Task<ReserveResult> ReserveAsync(Guid listingId, Guid buyerId, decimal quantityKg, CancellationToken ct)
     {
         // Ownership check lives here (not just in ReservationsEndpoints) so every caller -
         // the HTTP endpoint, the chat tool executor, and any future caller - inherits it.
@@ -40,16 +40,17 @@ public class ReservationsService
         // permanently decremented with no reservation row to account for it. This
         // transaction only ever wraps writes that happen after the atomicity guard
         // below has already been evaluated by Postgres, so it does not reintroduce
-        // any read-then-write race on QuantityAvailable.
+        // any read-then-write race on QuantityAvailableKg.
         await using var transaction = await _db.Database.BeginTransactionAsync(ct);
 
-        // Single atomic conditional UPDATE: the decrement and the "is there stock" check
-        // happen as one statement executed by Postgres, so two simultaneous requests on
-        // the last pint cannot both see QuantityAvailable > 0 and both succeed. A
-        // SELECT-then-UPDATE here would be racy (both requests could read quantity=1
-        // before either writes), so this must never be split into a separate read.
+        // Single atomic conditional UPDATE: the decrement and the "is there enough stock"
+        // check happen as one statement executed by Postgres, so two simultaneous requests
+        // against the last of the stock cannot both see QuantityAvailableKg >= quantityKg
+        // and both succeed. A SELECT-then-UPDATE here would be racy (both requests could
+        // read the same quantity before either writes), so this must never be split into a
+        // separate read.
         var rows = await _db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"Listings\" SET \"QuantityAvailable\" = \"QuantityAvailable\" - 1 WHERE \"Id\" = {listingId} AND \"QuantityAvailable\" > 0",
+            $"UPDATE \"Listings\" SET \"QuantityAvailableKg\" = \"QuantityAvailableKg\" - {quantityKg} WHERE \"Id\" = {listingId} AND \"QuantityAvailableKg\" >= {quantityKg}",
             ct);
 
         if (rows == 0)
@@ -64,7 +65,7 @@ public class ReservationsService
             Id = Guid.NewGuid(),
             ListingId = listingId,
             BuyerId = buyerId,
-            Quantity = 1,
+            QuantityKg = quantityKg,
             Status = ReservationStatus.Pending,
             ReservedAt = DateTimeOffset.UtcNow
         };

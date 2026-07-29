@@ -5,7 +5,7 @@ Status: Accepted
 
 ## Context
 
-The existing `index.html` prototype establishes the intended UX: browse/filter/search listings, post a listing, reserve ("buy") a pint. That's a CRUD- and forms-heavy marketplace UI. The backend is .NET (see ADR-0001), and there's no existing team frontend preference — the choice was made purely on technical merit for a solo developer who may grow the team later.
+The existing `index.html` prototype establishes the intended UX: browse/filter/search listings, post a listing, reserve ("buy") berries by the kilogram. That's a CRUD- and forms-heavy marketplace UI. The backend is .NET (see ADR-0001), and there's no existing team frontend preference — the choice was made purely on technical merit for a solo developer who may grow the team later.
 
 ## Decision
 

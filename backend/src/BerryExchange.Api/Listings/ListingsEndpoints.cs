@@ -82,21 +82,30 @@ public static class ListingsEndpoints
             errors.Add("Note must be 80 characters or fewer.");
         }
 
-        if (request.PricePerPint <= 0)
+        if (request.PricePerKg <= 0)
         {
-            errors.Add("PricePerPint must be greater than 0.");
+            errors.Add("PricePerKg must be greater than 0.");
         }
-        else if (request.PricePerPint >= 100_000_000)
+        else if (request.PricePerKg >= 100_000_000)
         {
             // The DB column is numeric(10,2): max ~99,999,999.99. Anything at or above
             // 100,000,000 overflows it and would otherwise throw an unhandled Npgsql
             // exception (500) at SaveChangesAsync instead of a clean 400 here.
-            errors.Add("PricePerPint must be less than 100,000,000.");
+            errors.Add("PricePerKg must be less than 100,000,000.");
+        }
+        else if (decimal.Round(request.PricePerKg, 2) != request.PricePerKg)
+        {
+            // numeric(10,2) would otherwise silently round this instead of rejecting it.
+            errors.Add("PricePerKg must have at most 2 decimal places.");
         }
 
-        if (request.QuantityAvailable < 0)
+        if (request.QuantityAvailableKg < 0)
         {
-            errors.Add("QuantityAvailable must be 0 or greater.");
+            errors.Add("QuantityAvailableKg must be 0 or greater.");
+        }
+        else if (decimal.Round(request.QuantityAvailableKg, 2) != request.QuantityAvailableKg)
+        {
+            errors.Add("QuantityAvailableKg must have at most 2 decimal places.");
         }
 
         return errors;

@@ -28,7 +28,8 @@ public class BerryExchangeDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.Property(l => l.BerryType).HasMaxLength(40).IsRequired();
             entity.Property(l => l.FarmName).HasMaxLength(40).IsRequired();
             entity.Property(l => l.Note).HasMaxLength(80);
-            entity.Property(l => l.PricePerPint).HasColumnType("numeric(10,2)");
+            entity.Property(l => l.PricePerKg).HasColumnType("numeric(10,2)");
+            entity.Property(l => l.QuantityAvailableKg).HasColumnType("numeric(10,2)");
             entity.Property(l => l.AiTastingNotes).HasMaxLength(300);
             entity.Property(l => l.Embedding).HasColumnType("vector(384)");
             entity.HasIndex(l => l.Embedding).HasMethod("hnsw").HasOperators("vector_cosine_ops");
@@ -37,6 +38,7 @@ public class BerryExchangeDbContext : IdentityDbContext<ApplicationUser, Identit
 
         builder.Entity<Reservation>(entity =>
         {
+            entity.Property(r => r.QuantityKg).HasColumnType("numeric(10,2)");
             entity.HasOne<Listing>().WithMany().HasForeignKey(r => r.ListingId);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(r => r.BuyerId);
         });

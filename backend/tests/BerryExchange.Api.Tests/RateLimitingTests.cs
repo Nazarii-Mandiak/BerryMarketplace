@@ -78,8 +78,8 @@ public class RateLimitingTests : IClassFixture<ApiTestFixture>
         {
             BerryType = "Strawberry",
             FarmName = "F",
-            PricePerPint = (decimal?)null,
-            QuantityAvailable = (int?)null,
+            PricePerKg = (decimal?)null,
+            QuantityAvailableKg = (decimal?)null,
             Note = new string('a', 2001),
         });
 

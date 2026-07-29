@@ -33,12 +33,12 @@ public class MarketplaceApiClientTests
         Assert.Contains("semantic", search);
         Assert.Contains("q=sweet%20strawberries", handler.Requests[0].RequestUri!.Query);
 
-        await client.CreateReservationAsync(Guid.NewGuid(), CancellationToken.None);
+        await client.CreateReservationAsync(Guid.NewGuid(), 1m, CancellationToken.None);
         Assert.Contains(handler.Requests, r => r.RequestUri!.AbsolutePath == "/api/accounts/login");
 
         // Second reservation must not log in again.
         var loginCount = handler.Requests.Count(r => r.RequestUri!.AbsolutePath == "/api/accounts/login");
-        await client.CreateReservationAsync(Guid.NewGuid(), CancellationToken.None);
+        await client.CreateReservationAsync(Guid.NewGuid(), 1m, CancellationToken.None);
         Assert.Equal(loginCount, handler.Requests.Count(r => r.RequestUri!.AbsolutePath == "/api/accounts/login"));
     }
 
@@ -47,7 +47,7 @@ public class MarketplaceApiClientTests
     {
         var client = new MarketplaceApiClient(
             new HttpClient(new ScriptedHandler()) { BaseAddress = new Uri("http://api.test") }, null, null);
-        var result = await client.CreateReservationAsync(Guid.NewGuid(), CancellationToken.None);
+        var result = await client.CreateReservationAsync(Guid.NewGuid(), 1m, CancellationToken.None);
         Assert.Contains("disabled", result, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -83,17 +83,17 @@ public class MarketplaceApiClientTests
         var client = new MarketplaceApiClient(
             new HttpClient(handler) { BaseAddress = new Uri("http://api.test") }, "mcp@test.dev", "Password1!");
 
-        await client.CreateReservationAsync(Guid.NewGuid(), CancellationToken.None);
+        await client.CreateReservationAsync(Guid.NewGuid(), 1m, CancellationToken.None);
         Assert.Equal(1, handler.LoginCount);
 
         // Simulate the session having expired server-side.
         handler.SessionExpired = true;
-        var result = await client.CreateReservationAsync(Guid.NewGuid(), CancellationToken.None);
+        var result = await client.CreateReservationAsync(Guid.NewGuid(), 1m, CancellationToken.None);
         Assert.Contains("401", result);
 
         // The next reservation attempt must re-authenticate rather than staying "logged in"
         // forever, since the cookie is no longer valid.
-        await client.CreateReservationAsync(Guid.NewGuid(), CancellationToken.None);
+        await client.CreateReservationAsync(Guid.NewGuid(), 1m, CancellationToken.None);
         Assert.Equal(2, handler.LoginCount);
     }
 
@@ -122,7 +122,7 @@ public class MarketplaceApiClientTests
         var client = new MarketplaceApiClient(
             new HttpClient(new DetailedErrorHandler()) { BaseAddress = new Uri("http://api.test") }, "mcp@test.dev", "Password1!");
 
-        var result = await client.CreateReservationAsync(Guid.NewGuid(), CancellationToken.None);
+        var result = await client.CreateReservationAsync(Guid.NewGuid(), 1m, CancellationToken.None);
 
         Assert.Contains("You cannot reserve your own listing.", result);
     }

@@ -5,7 +5,7 @@ Status: Accepted
 
 ## Context
 
-Berry Exchange needs to self-host today (Docker Compose) and migrate to Azure later without a re-platform. It also needs solid transactional guarantees for one specific correctness-critical operation: atomically decrementing a listing's stock so two buyers can't both reserve the last pint (see `docs/architecture/reservation-flow.mmd`).
+Berry Exchange needs to self-host today (Docker Compose) and migrate to Azure later without a re-platform. It also needs solid transactional guarantees for one specific correctness-critical operation: atomically decrementing a listing's stock so two buyers can't both reserve the last of it (see `docs/architecture/reservation-flow.mmd`).
 
 ## Decision
 

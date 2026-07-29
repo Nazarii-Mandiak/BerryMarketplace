@@ -46,8 +46,8 @@ public class ListingsService
             SellerId = sellerId,
             BerryType = request.BerryType,
             FarmName = request.FarmName,
-            PricePerPint = request.PricePerPint,
-            QuantityAvailable = request.QuantityAvailable,
+            PricePerKg = request.PricePerKg,
+            QuantityAvailableKg = request.QuantityAvailableKg,
             Note = request.Note,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -61,7 +61,7 @@ public class ListingsService
         {
             await _events.PublishAsync(ListingCreatedEvent.RoutingKey, new ListingCreatedEvent(
                 listing.Id, listing.SellerId, listing.BerryType, listing.FarmName,
-                listing.PricePerPint, listing.QuantityAvailable, listing.Note, listing.CreatedAt), ct);
+                listing.PricePerKg, listing.QuantityAvailableKg, listing.Note, listing.CreatedAt), ct);
         }
         catch (Exception ex)
         {

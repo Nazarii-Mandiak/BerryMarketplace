@@ -18,8 +18,8 @@ erDiagram
         uuid seller_id FK
         string berry_type
         string farm_name
-        decimal price_per_pint
-        int quantity_available
+        decimal price_per_kg
+        decimal quantity_available_kg
         string note
         timestamptz created_at
         vector(384) embedding
@@ -29,7 +29,7 @@ erDiagram
         uuid id PK
         uuid listing_id FK
         uuid buyer_id FK
-        int quantity
+        decimal quantity_kg
         string status
         timestamptz reserved_at
     }

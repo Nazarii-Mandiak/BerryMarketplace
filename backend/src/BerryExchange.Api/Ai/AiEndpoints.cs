@@ -29,11 +29,11 @@ public static class AiEndpoints
             }
 
             var comparables = (await listings.GetAllAsync(ct))
-                .Where(l => l.QuantityAvailable > 0)
+                .Where(l => l.QuantityAvailableKg > 0)
                 .OrderByDescending(l => string.Equals(l.BerryType, draft.BerryType, StringComparison.OrdinalIgnoreCase))
                 .ThenByDescending(l => l.CreatedAt)
                 .Take(10)
-                .Select(l => new ComparableListing(l.BerryType, l.FarmName, l.PricePerPint, l.QuantityAvailable))
+                .Select(l => new ComparableListing(l.BerryType, l.FarmName, l.PricePerKg, l.QuantityAvailableKg))
                 .ToList();
 
             var suggestion = await ai.SuggestListingCopyAsync(draft, comparables, ct);

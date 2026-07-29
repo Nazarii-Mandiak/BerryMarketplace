@@ -1,8 +1,9 @@
 # Berrow (Berry Exchange)
 
 A berry marketplace with an AI core: growers list fresh berries, buyers browse,
-search semantically, chat with an agent, and reserve pints — backed by a real
-API, database, message broker, and an async AI enrichment pipeline.
+search semantically, chat with an agent, and reserve them by the kilogram —
+backed by a real API, database, message broker, and an async AI enrichment
+pipeline.
 
 ## Architecture
 
