@@ -36,6 +36,8 @@ public class GoogleLoginEndpointsTests : IClassFixture<ApiTestFixture>
 
         var me = await client.GetAsync("/api/accounts/me");
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+        var meBody = await me.Content.ReadFromJsonAsync<UserResponse>();
+        Assert.Equal("New Google User", meBody!.DisplayName);
     }
 
     [Fact]
@@ -55,6 +57,32 @@ public class GoogleLoginEndpointsTests : IClassFixture<ApiTestFixture>
         // Must sign into the SAME account the password registration created, not a new one.
         Assert.Equal(registered!.Id, googleBody!.Id);
         Assert.Equal("Password User", googleBody.DisplayName);
+    }
+
+    [Fact]
+    public async Task Auto_link_of_an_unconfirmed_account_removes_the_existing_password_so_a_pre_registration_squatter_loses_access()
+    {
+        var client = _fixture.CreateClient();
+        // Simulate an attacker pre-registering the victim's email address with a password
+        // only the attacker knows. Registration is open/unauthenticated and this app never
+        // sends a confirmation email, so the account is created with EmailConfirmed == false.
+        var registerResponse = await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "prehijack-victim@example.com", Password: "AttackerPassword123!", DisplayName: "Attacker-Chosen Name"));
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+        await client.PostAsync("/api/accounts/logout", null);
+
+        // The real victim later signs in with Google using their real address. Google has
+        // verified this address, so the auto-link path should treat that as stronger proof
+        // of ownership than the squatted password and neutralize the squatter's access.
+        var credential = PayloadJson("google-sub-prehijack-1", "prehijack-victim@example.com", true, "Victim Real Name");
+        var googleResponse = await client.PostAsJsonAsync("/api/accounts/google", new GoogleLoginRequest(credential));
+        Assert.Equal(HttpStatusCode.OK, googleResponse.StatusCode);
+        await client.PostAsync("/api/accounts/logout", null);
+
+        // The attacker's original password must no longer authenticate this account.
+        var attackerLoginAttempt = await client.PostAsJsonAsync("/api/accounts/login", new LoginRequest(
+            Email: "prehijack-victim@example.com", Password: "AttackerPassword123!"));
+        Assert.Equal(HttpStatusCode.Unauthorized, attackerLoginAttempt.StatusCode);
     }
 
     [Fact]
@@ -95,5 +123,9 @@ public class GoogleLoginEndpointsTests : IClassFixture<ApiTestFixture>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.False(response.Headers.Contains("Set-Cookie"));
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var errors = body.GetProperty("errors");
+        Assert.Equal("Google account email is not verified.", errors[0].GetString());
     }
 }

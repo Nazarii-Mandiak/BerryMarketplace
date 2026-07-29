@@ -51,6 +51,11 @@ public static class AccountsEndpoints
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager) =>
         {
+            if (string.IsNullOrWhiteSpace(request.Credential))
+            {
+                return Results.Unauthorized();
+            }
+
             var payload = await googleValidator.ValidateAsync(request.Credential);
             if (payload is null)
             {
@@ -87,6 +92,37 @@ public static class AccountsEndpoints
                 if (!addLoginResult.Succeeded)
                 {
                     return Results.BadRequest(new { errors = addLoginResult.Errors.Select(e => e.Description) });
+                }
+
+                if (!user.EmailConfirmed)
+                {
+                    // This matched account's email was never confirmed: registration is open and
+                    // unauthenticated, and this app never sends a confirmation email, so an
+                    // unconfirmed account could belong to an attacker who pre-registered the
+                    // victim's address with a password only they know (account pre-hijacking).
+                    // Google has now proven the signed-in user owns this exact address, so:
+                    // strip any password on the account (kills the attacker's password-login
+                    // access), mark the email confirmed (Google's verification stands in for
+                    // the confirmation email we never send), and rotate the security stamp
+                    // (invalidates any session/cookie the attacker already holds for it).
+                    var removePasswordResult = await userManager.RemovePasswordAsync(user);
+                    if (!removePasswordResult.Succeeded)
+                    {
+                        return Results.BadRequest(new { errors = removePasswordResult.Errors.Select(e => e.Description) });
+                    }
+
+                    user.EmailConfirmed = true;
+                    var updateResult = await userManager.UpdateAsync(user);
+                    if (!updateResult.Succeeded)
+                    {
+                        return Results.BadRequest(new { errors = updateResult.Errors.Select(e => e.Description) });
+                    }
+
+                    var stampResult = await userManager.UpdateSecurityStampAsync(user);
+                    if (!stampResult.Succeeded)
+                    {
+                        return Results.BadRequest(new { errors = stampResult.Errors.Select(e => e.Description) });
+                    }
                 }
             }
 
