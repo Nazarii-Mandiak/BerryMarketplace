@@ -20,15 +20,15 @@ public sealed class AnthropicGenerativeAi : IGenerativeAi
         var comparablesText = comparables.Count == 0
             ? "(no comparable listings yet)"
             : string.Join("\n", comparables.Select(c =>
-                $"- {c.BerryType} from {c.FarmName}: ${c.PricePerPint}/pint, {c.QuantityAvailable} available"));
+                $"- {c.BerryType} from {c.FarmName}: ${c.PricePerKg}/kg, {c.QuantityAvailableKg} kg available"));
 
         var prompt = $"""
             A grower is drafting a berry marketplace listing.
-            Draft: berry={draft.BerryType}; farm={draft.FarmName}; price=${draft.PricePerPint?.ToString() ?? "unset"}/pint; quantity={draft.QuantityAvailable?.ToString() ?? "unset"}; note={draft.Note ?? "(none)"}
+            Draft: berry={draft.BerryType}; farm={draft.FarmName}; price=${draft.PricePerKg?.ToString() ?? "unset"}/kg; quantity={draft.QuantityAvailableKg?.ToString() ?? "unset"} kg; note={draft.Note ?? "(none)"}
             Comparable current listings:
             {comparablesText}
             Write an improved listing note (max 80 characters, warm and concrete) and suggest a fair
-            price per pint grounded in the comparables.
+            price per kilogram grounded in the comparables.
             """;
 
         var response = await _client.Messages.Create(new MessageCreateParams
@@ -50,11 +50,11 @@ public sealed class AnthropicGenerativeAi : IGenerativeAi
                         ["properties"] = JsonSerializer.SerializeToElement(new
                         {
                             improvedDescription = new { type = "string" },
-                            suggestedPricePerPint = new { type = "number" },
+                            suggestedPricePerKg = new { type = "number" },
                             reasoning = new { type = "string" },
                         }),
                         ["required"] = JsonSerializer.SerializeToElement(
-                            new[] { "improvedDescription", "suggestedPricePerPint", "reasoning" }),
+                            new[] { "improvedDescription", "suggestedPricePerKg", "reasoning" }),
                         ["additionalProperties"] = JsonSerializer.SerializeToElement(false),
                     },
                 },

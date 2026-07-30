@@ -29,25 +29,25 @@ public class ChatToolExecutorTests : IClassFixture<ApiTestFixture>
         var listing = new Listing
         {
             Id = Guid.NewGuid(), SellerId = seller.Id, BerryType = "Mulberry", FarmName = "Silk Farm",
-            PricePerPint = 4m, QuantityAvailable = 2, CreatedAt = DateTimeOffset.UtcNow,
+            PricePerKg = 4m, QuantityAvailableKg = 2, CreatedAt = DateTimeOffset.UtcNow,
         };
         db.Listings.Add(listing);
         await db.SaveChangesAsync();
 
         var unconfirmed = await executor.ExecuteAsync(buyer.Id,
             new AgentToolCall("t1", "create_reservation",
-                JsonSerializer.Serialize(new { listing_id = listing.Id, user_confirmed = false })),
+                JsonSerializer.Serialize(new { listing_id = listing.Id, quantity_kg = 1m, user_confirmed = false })),
             CancellationToken.None);
         Assert.True(unconfirmed.IsError);
 
         var confirmed = await executor.ExecuteAsync(buyer.Id,
             new AgentToolCall("t2", "create_reservation",
-                JsonSerializer.Serialize(new { listing_id = listing.Id, user_confirmed = true })),
+                JsonSerializer.Serialize(new { listing_id = listing.Id, quantity_kg = 1m, user_confirmed = true })),
             CancellationToken.None);
         Assert.False(confirmed.IsError);
 
         db.ChangeTracker.Clear();
-        Assert.Equal(1, (await db.Listings.FindAsync(listing.Id))!.QuantityAvailable);
+        Assert.Equal(1, (await db.Listings.FindAsync(listing.Id))!.QuantityAvailableKg);
 
         var stock = await executor.ExecuteAsync(buyer.Id,
             new AgentToolCall("t3", "check_stock",

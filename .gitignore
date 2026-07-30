@@ -20,3 +20,6 @@ obj/
 # Secrets / local env
 .env
 .env.*
+
+# Local tooling scratch output
+.playwright-mcp/

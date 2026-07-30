@@ -15,7 +15,7 @@ public class KeywordFallbackSearchTests : IClassFixture<ApiTestFixture>
         (await client.PostAsJsonAsync("/api/accounts/register",
             new { Email = $"k-{Guid.NewGuid():N}@test.dev", Password = "Password1!", DisplayName = "K" })).EnsureSuccessStatusCode();
         (await client.PostAsJsonAsync("/api/listings",
-            new { BerryType = "Cloudberry", FarmName = "North Bog", PricePerPint = 9m, QuantityAvailable = 1, Note = (string?)null })).EnsureSuccessStatusCode();
+            new { BerryType = "Cloudberry", FarmName = "North Bog", PricePerKg = 9m, QuantityAvailableKg = 1m, Note = (string?)null })).EnsureSuccessStatusCode();
 
         var response = await client.GetAsync("/api/listings/search?q=cloudberry");
         response.EnsureSuccessStatusCode();

@@ -21,7 +21,7 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
         var client = _fixture.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
-            BerryType: "Blueberries", FarmName: "Blue Hollow Orchard", PricePerPint: 5.2m, QuantityAvailable: 10, Note: null));
+            BerryType: "Blueberries", FarmName: "Blue Hollow Orchard", PricePerKg: 5.2m, QuantityAvailableKg: 10, Note: null));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -34,7 +34,7 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
             Email: "listings-seller@example.com", Password: "Password123!", DisplayName: "Listings Seller"));
 
         var createResponse = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
-            BerryType: "Raspberries", FarmName: "Thistlewood Farm", PricePerPint: 7.8m, QuantityAvailable: 9, Note: "Delicate."));
+            BerryType: "Raspberries", FarmName: "Thistlewood Farm", PricePerKg: 7.8m, QuantityAvailableKg: 9, Note: "Delicate."));
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var created = await createResponse.Content.ReadFromJsonAsync<ListingResponse>();
 
@@ -63,7 +63,7 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
 
         var overlongBerryType = new string('B', 41);
         var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
-            BerryType: overlongBerryType, FarmName: "Blue Hollow Orchard", PricePerPint: 5.2m, QuantityAvailable: 10, Note: null));
+            BerryType: overlongBerryType, FarmName: "Blue Hollow Orchard", PricePerKg: 5.2m, QuantityAvailableKg: 10, Note: null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -76,7 +76,7 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
             Email: "listings-badprice@example.com", Password: "Password123!", DisplayName: "Bad Price Seller"));
 
         var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
-            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerPint: 0m, QuantityAvailable: 10, Note: null));
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerKg: 0m, QuantityAvailableKg: 10, Note: null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -92,7 +92,50 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
         // above 100,000,000 sailed past validation and threw an unhandled Npgsql overflow
         // exception (500) at SaveChangesAsync instead of a clean 400.
         var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
-            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerPint: 100_000_000m, QuantityAvailable: 10, Note: null));
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerKg: 100_000_000m, QuantityAvailableKg: 10, Note: null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_with_a_fractional_price_and_quantity_succeeds()
+    {
+        var client = _fixture.CreateClient();
+        await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "listings-fractional@example.com", Password: "Password123!", DisplayName: "Fractional Seller"));
+
+        var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerKg: 5.25m, QuantityAvailableKg: 12.5m, Note: null));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<ListingResponse>();
+        Assert.Equal(5.25m, created!.PricePerKg);
+        Assert.Equal(12.5m, created.QuantityAvailableKg);
+    }
+
+    [Fact]
+    public async Task Create_with_a_price_that_has_more_than_2_decimal_places_returns_bad_request()
+    {
+        var client = _fixture.CreateClient();
+        await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "listings-price-precision@example.com", Password: "Password123!", DisplayName: "Precision Seller"));
+
+        // numeric(10,2) would otherwise silently round 5.256 to 5.26 instead of rejecting it.
+        var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerKg: 5.256m, QuantityAvailableKg: 10, Note: null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_with_a_quantity_that_has_more_than_2_decimal_places_returns_bad_request()
+    {
+        var client = _fixture.CreateClient();
+        await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "listings-qty-precision@example.com", Password: "Password123!", DisplayName: "Qty Precision Seller"));
+
+        var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerKg: 5.25m, QuantityAvailableKg: 12.505m, Note: null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -113,7 +156,7 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
         // and must succeed - not be rejected - storing the trimmed value.
         var paddedBerryType = "  " + new string('A', 40);
         var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
-            BerryType: paddedBerryType, FarmName: "Blue Hollow Orchard", PricePerPint: 5.2m, QuantityAvailable: 10, Note: null));
+            BerryType: paddedBerryType, FarmName: "Blue Hollow Orchard", PricePerKg: 5.2m, QuantityAvailableKg: 10, Note: null));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var created = await response.Content.ReadFromJsonAsync<ListingResponse>();
@@ -134,7 +177,7 @@ public class ListingsEndpointsTests : IClassFixture<ApiTestFixture>
         // raw, untrimmed length.
         var paddedNote = "  " + new string('N', 80);
         var response = await client.PostAsJsonAsync("/api/listings", new CreateListingRequest(
-            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerPint: 5.2m, QuantityAvailable: 10, Note: paddedNote));
+            BerryType: "Strawberries", FarmName: "Blue Hollow Orchard", PricePerKg: 5.2m, QuantityAvailableKg: 10, Note: paddedNote));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var created = await response.Content.ReadFromJsonAsync<ListingResponse>();

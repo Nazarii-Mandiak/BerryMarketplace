@@ -164,6 +164,9 @@ namespace BerryExchange.Api.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Vector>("Embedding")
                         .HasColumnType("vector(384)");
 
@@ -176,16 +179,22 @@ namespace BerryExchange.Api.Infrastructure.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)");
 
-                    b.Property<decimal>("PricePerPint")
+                    b.Property<string>("PhotoContentType")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<decimal>("PricePerKg")
                         .HasColumnType("numeric(10,2)");
 
-                    b.Property<int>("QuantityAvailable")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("QuantityAvailableKg")
+                        .HasColumnType("numeric(10,2)");
 
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeletedAt");
 
                     b.HasIndex("Embedding");
 
@@ -195,6 +204,20 @@ namespace BerryExchange.Api.Infrastructure.Migrations
                     b.HasIndex("SellerId");
 
                     b.ToTable("Listings");
+                });
+
+            modelBuilder.Entity("BerryExchange.Api.Listings.ListingPhoto", b =>
+                {
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Bytes")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("ListingId");
+
+                    b.ToTable("ListingPhotos");
                 });
 
             modelBuilder.Entity("BerryExchange.Api.Reservations.Reservation", b =>
@@ -209,8 +232,8 @@ namespace BerryExchange.Api.Infrastructure.Migrations
                     b.Property<Guid>("ListingId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("QuantityKg")
+                        .HasColumnType("numeric(10,2)");
 
                     b.Property<DateTimeOffset>("ReservedAt")
                         .HasColumnType("timestamp with time zone");
@@ -380,6 +403,15 @@ namespace BerryExchange.Api.Infrastructure.Migrations
                     b.HasOne("BerryExchange.Api.Accounts.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BerryExchange.Api.Listings.ListingPhoto", b =>
+                {
+                    b.HasOne("BerryExchange.Api.Listings.Listing", null)
+                        .WithOne()
+                        .HasForeignKey("BerryExchange.Api.Listings.ListingPhoto", "ListingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

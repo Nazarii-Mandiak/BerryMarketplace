@@ -1,11 +1,11 @@
-%% Berry Exchange — supplementary: "buy a pint" reservation flow (concurrency-critical)
+%% Berry Exchange — supplementary: reservation flow, buying by the kilogram (concurrency-critical)
 sequenceDiagram
     participant Buyer as Buyer (Browser)
     participant API as Reservations API
     participant DB as PostgreSQL
 
-    Buyer->>API: POST /api/listings/{id}/reservations
-    API->>DB: UPDATE listings SET qty = qty - 1 WHERE id = :id AND qty > 0
+    Buyer->>API: POST /api/listings/{id}/reservations { quantityKg }
+    API->>DB: UPDATE listings SET qty_kg = qty_kg - :quantityKg WHERE id = :id AND qty_kg >= :quantityKg
     alt 1 row updated
         DB-->>API: OK
         API->>DB: INSERT reservation (status = Pending)

@@ -133,7 +133,7 @@ public static class AccountsEndpoints
         group.MapPost("/logout", async (SignInManager<ApplicationUser> signInManager) =>
         {
             await signInManager.SignOutAsync();
-            return Results.Ok();
+            return Results.NoContent();
         });
 
         group.MapGet("/me", async (HttpContext http, UserManager<ApplicationUser> userManager) =>

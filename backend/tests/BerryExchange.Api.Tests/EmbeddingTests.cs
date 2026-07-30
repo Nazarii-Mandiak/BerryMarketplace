@@ -9,7 +9,7 @@ public class EmbeddingTests
     {
         using var embedder = new LocalTextEmbedder();
         var strawberries = embedder.Embed("sweet ripe strawberries for jam");
-        var strawberries2 = embedder.Embed("fresh strawberry pints, very sweet");
+        var strawberries2 = embedder.Embed("fresh strawberries by the kilogram, very sweet");
         var tractors = embedder.Embed("used diesel tractor parts catalog");
 
         Assert.Equal(384, embedder.Dimensions);

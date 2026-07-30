@@ -5,7 +5,7 @@ Status: Accepted
 
 ## Context
 
-Phase 6 adds a Model Context Protocol (MCP) server so that AI coding assistants and agent hosts (Claude Code, Claude Desktop, and similar MCP clients) can search Berry Exchange listings, inspect a listing, check availability, and reserve a pint — as tools an LLM can call directly, rather than a human driving the browser UI. This is a new kind of consumer for the marketplace: not a browser session with a logged-in human behind it (ADR-0004's cookie auth), and not an internal service reacting to a RabbitMQ event (ADR-0009), but an external process speaking the MCP protocol over stdio to whatever host launched it.
+Phase 6 adds a Model Context Protocol (MCP) server so that AI coding assistants and agent hosts (Claude Code, Claude Desktop, and similar MCP clients) can search Berry Exchange listings, inspect a listing, check availability, and reserve a quantity by the kilogram — as tools an LLM can call directly, rather than a human driving the browser UI. This is a new kind of consumer for the marketplace: not a browser session with a logged-in human behind it (ADR-0004's cookie auth), and not an internal service reacting to a RabbitMQ event (ADR-0009), but an external process speaking the MCP protocol over stdio to whatever host launched it.
 
 Two architectural questions follow from that: how the MCP server should reach marketplace data, and how it should authenticate for the one tool (`create_reservation`) that mutates state.
 

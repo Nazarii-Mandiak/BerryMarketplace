@@ -22,8 +22,8 @@ public class ListingEmbeddingPersistenceTests : IClassFixture<ApiTestFixture>
             SellerId = await SeedUserAsync(db),
             BerryType = "Gooseberry",
             FarmName = "Vector Farm",
-            PricePerPint = 4m,
-            QuantityAvailable = 2,
+            PricePerKg = 4m,
+            QuantityAvailableKg = 2,
             CreatedAt = DateTimeOffset.UtcNow,
             Embedding = new Vector(Enumerable.Repeat(0.1f, 384).ToArray()),
             AiTastingNotes = "Bright and tart."

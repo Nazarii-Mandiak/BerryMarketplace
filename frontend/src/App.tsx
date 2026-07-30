@@ -17,6 +17,7 @@ export function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route element={<RequireAuth />}>
           <Route path="/sell" element={<SellPage />} />
+          <Route path="/sell/:id" element={<SellPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
         </Route>
       </Route>
