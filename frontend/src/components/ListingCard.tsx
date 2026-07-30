@@ -4,34 +4,46 @@ import { GlowingEffect } from './ui/glowing-effect';
 
 const FINE_POINTER = typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
 
-function formatPrice(pricePerPint: number): string {
-  return `$${pricePerPint.toFixed(2)}/pt`;
+export function formatPrice(pricePerKg: number): string {
+  return `$${pricePerKg.toFixed(2)}/kg`;
 }
 
 interface ListingCardProps {
+  listingId: string;
   berryType: string;
   farmName: string;
-  pricePerPint: number;
+  pricePerKg: number;
+  hasPhoto?: boolean;
   note?: string | null;
   aiTastingNotes?: string | null;
   glow?: boolean;
+  /** Rendered in card-body, above the footer — for content that doesn't fit the
+   * footer's single space-between row (e.g. MarketPage's quantity picker). */
+  extraContent?: ReactNode;
   children?: ReactNode;
 }
 
 export function ListingCard({
+  listingId,
   berryType,
   farmName,
-  pricePerPint,
+  pricePerKg,
+  hasPhoto = false,
   note,
   aiTastingNotes,
   glow = false,
+  extraContent,
   children,
 }: ListingCardProps) {
   const card = (
     <div className="card">
       <div className="art">
-        <BerryIcon berryType={berryType} />
-        <span className="price-tag">{formatPrice(pricePerPint)}</span>
+        {hasPhoto ? (
+          <img src={`/api/listings/${listingId}/photo`} alt="" loading="lazy" className="card-photo" />
+        ) : (
+          <BerryIcon berryType={berryType} />
+        )}
+        <span className="price-tag">{formatPrice(pricePerKg)}</span>
       </div>
       <div className="card-body">
         <h3>{berryType}</h3>
@@ -42,6 +54,7 @@ export function ListingCard({
             <em>{aiTastingNotes}</em>
           </p>
         )}
+        {extraContent}
         <div className="card-foot">{children}</div>
       </div>
     </div>

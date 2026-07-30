@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getListings, reserveListing, searchListings } from '../../api/listings';
+import { deleteListing, getListings, reserveListing, searchListings } from '../../api/listings';
 import { ApiError } from '../../api/client';
 import { useCurrentUser } from '../auth/useCurrentUser';
 import { useToast } from '../../components/ToastProvider';
@@ -11,6 +11,50 @@ import type { ListingResponse, SearchListingsResponse } from '../../api/types';
 
 const LISTINGS_QUERY_KEY = ['listings'];
 const HARVEST_BERRIES = ['Strawberries', 'Blueberries', 'Raspberries', 'Blackberries', 'Gooseberries'];
+const QUANTITY_STEP_KG = 0.25;
+
+function clampQuantity(value: number, maxKg: number): number {
+  return Math.min(Math.max(value, 0.01), maxKg);
+}
+
+function QuantityPicker({ maxKg, quantity, onChange }: { maxKg: number; quantity: string; onChange: (next: string) => void }) {
+  function nudge(delta: number) {
+    const current = Number(quantity) || 0;
+    const stepped = Math.round((current + delta) / QUANTITY_STEP_KG) * QUANTITY_STEP_KG;
+    onChange(clampQuantity(stepped, maxKg).toFixed(2));
+  }
+
+  function handleBlur() {
+    const value = Number(quantity);
+    if (!Number.isFinite(value) || value <= 0) {
+      onChange('0.01');
+      return;
+    }
+    onChange(clampQuantity(Math.round(value * 100) / 100, maxKg).toFixed(2));
+  }
+
+  return (
+    <div className="qty-picker">
+      <button type="button" className="qty-picker-btn" onClick={() => nudge(-QUANTITY_STEP_KG)} aria-label="Decrease quantity">
+        −
+      </button>
+      <input
+        type="number"
+        step="0.01"
+        min="0.01"
+        max={maxKg}
+        value={quantity}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={handleBlur}
+        aria-label="Quantity in kilograms"
+      />
+      <button type="button" className="qty-picker-btn" onClick={() => nudge(QUANTITY_STEP_KG)} aria-label="Increase quantity">
+        +
+      </button>
+      <span className="qty-picker-unit">kg</span>
+    </div>
+  );
+}
 
 export function MarketPage() {
   const { data: user } = useCurrentUser();
@@ -25,22 +69,28 @@ export function MarketPage() {
   const [activeType, setActiveType] = useState('all');
   const [search, setSearch] = useState('');
   const [smartSearch, setSmartSearch] = useState<SearchListingsResponse | null>(null);
+  const [quantities, setQuantities] = useState<Record<string, string>>({});
+
+  function quantityFor(listing: ListingResponse): string {
+    return quantities[listing.id] ?? Math.min(0.5, listing.quantityAvailableKg || 0.5).toFixed(2);
+  }
 
   const reserveMutation = useMutation({
-    mutationFn: (listingId: string) => reserveListing(listingId),
-    onMutate: async (listingId: string) => {
+    mutationFn: ({ listingId, quantityKg }: { listingId: string; quantityKg: number }) =>
+      reserveListing(listingId, quantityKg),
+    onMutate: async ({ listingId, quantityKg }) => {
       await queryClient.cancelQueries({ queryKey: LISTINGS_QUERY_KEY });
       const previous = queryClient.getQueryData<ListingResponse[]>(LISTINGS_QUERY_KEY);
       queryClient.setQueryData<ListingResponse[]>(LISTINGS_QUERY_KEY, (current) =>
         current?.map((listing) =>
           listing.id === listingId
-            ? { ...listing, quantityAvailable: listing.quantityAvailable - 1 }
+            ? { ...listing, quantityAvailableKg: listing.quantityAvailableKg - quantityKg }
             : listing,
         ),
       );
       return { previous };
     },
-    onError: (err, _listingId, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) {
         queryClient.setQueryData(LISTINGS_QUERY_KEY, context.previous);
       }
@@ -50,16 +100,34 @@ export function MarketPage() {
       }
       showToast(err instanceof ApiError && err.status === 409 ? 'Sold out.' : 'Something went wrong — try again.');
     },
-    onSuccess: (_data, listingId) => {
+    onSuccess: (_data, { listingId, quantityKg }) => {
       const listing = listings?.find((l) => l.id === listingId);
       if (listing) {
-        showToast(`Added a pint of ${listing.berryType.toLowerCase()} to your reservations.`);
+        showToast(`Added ${quantityKg} kg of ${listing.berryType.toLowerCase()} to your reservations.`);
       }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: LISTINGS_QUERY_KEY });
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (listingId: string) => deleteListing(listingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LISTINGS_QUERY_KEY });
+      showToast('Listing deleted.');
+    },
+    onError: () => {
+      showToast('Could not delete the listing — try again.');
+    },
+  });
+
+  function handleDelete(listing: ListingResponse) {
+    if (!window.confirm(`Delete this ${listing.berryType.toLowerCase()} listing? This can't be undone.`)) {
+      return;
+    }
+    deleteMutation.mutate(listing.id);
+  }
 
   const types = useMemo(() => {
     const seen = new Set<string>();
@@ -99,30 +167,53 @@ export function MarketPage() {
   }
 
   function renderCard(listing: ListingResponse) {
-    const soldOut = listing.quantityAvailable <= 0;
-    const low = !soldOut && listing.quantityAvailable <= 5;
+    const soldOut = listing.quantityAvailableKg <= 0;
+    const low = !soldOut && listing.quantityAvailableKg <= 2;
     const isOwnListing = user?.id === listing.sellerId;
+    const quantity = quantityFor(listing);
+    const isReservingThis = reserveMutation.isPending && reserveMutation.variables?.listingId === listing.id;
+
     return (
       <ListingCard
         key={listing.id}
+        listingId={listing.id}
         berryType={listing.berryType}
         farmName={listing.farmName}
-        pricePerPint={listing.pricePerPint}
+        pricePerKg={listing.pricePerKg}
+        hasPhoto={listing.hasPhoto}
         note={listing.note}
         aiTastingNotes={listing.aiTastingNotes}
         glow
+        extraContent={
+          !isOwnListing && !soldOut ? (
+            <QuantityPicker
+              maxKg={listing.quantityAvailableKg}
+              quantity={quantity}
+              onChange={(next) => setQuantities((prev) => ({ ...prev, [listing.id]: next }))}
+            />
+          ) : undefined
+        }
       >
         <span className={`qty${low ? ' low' : ''}`}>
-          {soldOut ? 'Sold out' : `${listing.quantityAvailable} pt${listing.quantityAvailable === 1 ? '' : 's'} left`}
+          {soldOut ? 'Sold out' : `${listing.quantityAvailableKg} kg left`}
         </span>
-        {!isOwnListing && (
+        {isOwnListing ? (
+          <div className="own-listing-actions">
+            <Link to={`/sell/${listing.id}`} className="btn-edit">
+              Edit
+            </Link>
+            <button type="button" className="btn-delete" onClick={() => handleDelete(listing)}>
+              Delete
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
             className="btn-buy"
-            disabled={soldOut || reserveMutation.isPending}
-            onClick={() => reserveMutation.mutate(listing.id)}
+            disabled={soldOut || isReservingThis}
+            onClick={() => reserveMutation.mutate({ listingId: listing.id, quantityKg: Number(quantity) })}
           >
-            {soldOut ? 'Sold out' : 'Buy a pint'}
+            {soldOut ? 'Sold out' : `Buy ${quantity} kg`}
           </button>
         )}
       </ListingCard>

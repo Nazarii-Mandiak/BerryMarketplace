@@ -21,11 +21,14 @@ async function parseErrorBody(response: Response): Promise<string[]> {
 }
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  // FormData bodies (photo uploads) must not get a manual Content-Type: the browser sets
+  // the multipart boundary itself, and overriding it here would break the upload.
+  const isFormData = init?.body instanceof FormData;
   const response = await fetch(`/api${path}`, {
     ...init,
     credentials: 'include',
     headers: {
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init?.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
       ...init?.headers,
     },
   });

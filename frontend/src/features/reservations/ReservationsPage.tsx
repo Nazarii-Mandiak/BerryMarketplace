@@ -27,9 +27,10 @@ export function ReservationsPage() {
         {reservations?.map((reservation) => (
           <ListingCard
             key={reservation.id}
+            listingId={reservation.listingId}
             berryType={reservation.berryType}
             farmName={reservation.farmName}
-            pricePerPint={reservation.pricePerPint}
+            pricePerKg={reservation.pricePerKg}
           >
             <span className="status-badge">{reservation.status}</span>
             <span className="qty">{formatDate(reservation.reservedAt)}</span>
