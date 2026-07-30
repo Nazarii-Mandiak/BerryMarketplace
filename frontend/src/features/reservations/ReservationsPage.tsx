@@ -33,7 +33,9 @@ export function ReservationsPage() {
             pricePerKg={reservation.pricePerKg}
           >
             <span className="status-badge">{reservation.status}</span>
-            <span className="qty">{formatDate(reservation.reservedAt)}</span>
+            <span className="qty">
+              {reservation.quantityKg} kg · {formatDate(reservation.reservedAt)}
+            </span>
           </ListingCard>
         ))}
       </div>

@@ -29,5 +29,6 @@ describe('ReservationsPage', () => {
     expect(await screen.findByText('Gooseberries')).toBeInTheDocument();
     expect(screen.getByText('Old Stone Orchard')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByText(/1 kg/)).toBeInTheDocument();
   });
 });
