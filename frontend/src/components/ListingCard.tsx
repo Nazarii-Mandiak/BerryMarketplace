@@ -54,8 +54,10 @@ export function ListingCard({
             <em>{aiTastingNotes}</em>
           </p>
         )}
-        {extraContent}
-        <div className="card-foot">{children}</div>
+        <div className="card-bottom">
+          {extraContent}
+          <div className="card-foot">{children}</div>
+        </div>
       </div>
     </div>
   );

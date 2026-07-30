@@ -31,6 +31,7 @@ export function ReservationsPage() {
             berryType={reservation.berryType}
             farmName={reservation.farmName}
             pricePerKg={reservation.pricePerKg}
+            glow
           >
             <span className="status-badge">{reservation.status}</span>
             <span className="qty">
