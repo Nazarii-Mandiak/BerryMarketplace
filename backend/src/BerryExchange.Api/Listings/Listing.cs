@@ -14,4 +14,5 @@ public class Listing
     public DateTimeOffset CreatedAt { get; set; }
     public Vector? Embedding { get; set; }
     public string? AiTastingNotes { get; set; }
+    public string? PhotoContentType { get; set; }
 }

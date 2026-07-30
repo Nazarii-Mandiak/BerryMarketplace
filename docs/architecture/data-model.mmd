@@ -3,6 +3,7 @@ erDiagram
     USER ||--o{ LISTING : sells
     USER ||--o{ RESERVATION : buys
     LISTING ||--o{ RESERVATION : "reserved via"
+    LISTING ||--o| LISTING_PHOTO : "has"
     USER ||--o{ CHAT_CONVERSATION : starts
     CHAT_CONVERSATION ||--o{ CHAT_MESSAGE : contains
 
@@ -24,6 +25,11 @@ erDiagram
         timestamptz created_at
         vector(384) embedding
         string ai_tasting_notes
+        string photo_content_type
+    }
+    LISTING_PHOTO {
+        uuid listing_id PK_FK
+        bytea bytes
     }
     RESERVATION {
         uuid id PK

@@ -162,6 +162,7 @@ app.UseRateLimiter();
 
 app.MapAccountsEndpoints();
 app.MapListingsEndpoints();
+app.MapListingPhotosEndpoints();
 app.MapReservationsEndpoints();
 app.MapInternalEnrichmentEndpoints();
 app.MapAiEndpoints();

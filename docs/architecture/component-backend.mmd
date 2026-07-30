@@ -2,15 +2,17 @@
 graph LR
     subgraph API["ASP.NET Core Web API"]
         direction TB
-        Endpoints["Minimal API endpoints<br/>(Listings, Reservations, Accounts, Ai, Chat)"]
+        Endpoints["Minimal API endpoints<br/>(Listings, ListingPhotos, Reservations, Accounts, Ai, Chat)"]
         subgraph App["Application layer"]
             ListingsSvc[ListingsService]
             ResSvc[ReservationsService]
             AccountsSvc["AccountsService (wraps Identity)"]
             GoogleAuth["IGoogleIdTokenValidator<br/>GoogleIdTokenValidator / NullGoogleIdTokenValidator"]
+            PhotoPipeline["Photo processing (SkiaSharp)<br/>decode, EXIF-orient, resize, re-encode WebP"]
         end
         subgraph Domain["Domain"]
             ListingEntity[Listing]
+            ListingPhotoEntity[ListingPhoto]
             ReservationEntity[Reservation]
             UserEntity[User]
         end
@@ -27,6 +29,8 @@ graph LR
     GoogleApi[("Google Identity Services<br/>ID token signature verification")]
 
     Endpoints --> App
+    Endpoints --> PhotoPipeline
+    PhotoPipeline --> Infra
     GoogleAuth --> GoogleApi
     Endpoints --> Ai
     Endpoints --> Chat

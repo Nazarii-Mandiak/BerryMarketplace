@@ -16,11 +16,21 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.3.0" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
+    <PackageReference Include="SkiaSharp" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.150.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BerryExchange.Contracts\BerryExchange.Contracts.csproj" />
     <ProjectReference Include="..\BerryExchange.AiCore\BerryExchange.AiCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lets tests exercise ListingPhotosEndpoints' EXIF-orientation/resize helpers
+         directly with hand-built SKBitmaps, rather than only through crafted image bytes
+         over HTTP - the rotation math is the one part of that endpoint worth a precise,
+         pixel-level check. -->
+    <InternalsVisibleTo Include="BerryExchange.Api.Tests" />
   </ItemGroup>
 
 </Project>
