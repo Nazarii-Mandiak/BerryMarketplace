@@ -2,14 +2,15 @@
 graph LR
     subgraph SPA["React SPA"]
         direction TB
-        Routes["Routes: /market /sell /reservations /login"]
+        Routes["Routes: /market /sell /sell/:id /reservations /login"]
         subgraph Features
-            Market["Market feature<br/>listing grid, filters, search"]
-            Sell["Sell feature<br/>listing form"]
+            Market["Market feature<br/>listing grid, filters, search, qty picker, buy"]
+            Sell["Sell feature<br/>create/edit listing form, photo upload"]
             Reservations["Reservations feature<br/>buy action, my reservations"]
             Auth["Auth feature<br/>login/register"]
         end
-        ApiClient["API client layer<br/>(TanStack Query + fetch wrapper)"]
+        ApiClient["API client layer<br/>(TanStack Query + fetch wrapper, JSON + multipart FormData)"]
+        ListingCard["ListingCard<br/>(shared card: photo/BerryIcon, price, footer slot)"]
         UI["Shared UI kit<br/>(design tokens from global.css: colors, buttons, chips, cards)"]
         Theme["ThemeProvider / ThemeToggle<br/>(light/dark/system, .dark class + localStorage)"]
         Glow["GlowingEffect<br/>(pointer-tracked card border, motion)"]
@@ -18,7 +19,10 @@ graph LR
 
     Routes --> Features
     Features --> ApiClient
+    Market --> ListingCard
+    Reservations --> ListingCard
+    ListingCard --> UI
     Features --> UI
     UI --> Theme
     UI --> Glow
-    ApiClient -->|"HTTPS JSON"| API
+    ApiClient -->|"HTTPS JSON + multipart"| API
