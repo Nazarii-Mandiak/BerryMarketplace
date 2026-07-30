@@ -62,6 +62,21 @@ public class AccountsEndpointsTests : IClassFixture<ApiTestFixture>
     }
 
     [Fact]
+    public async Task Logout_returns_no_content()
+    {
+        // A 200 with an empty body previously made the frontend's apiRequest() throw on
+        // JSON.parse, so logout silently failed client-side despite the server already
+        // clearing the cookie. 204 is the correct response for a void endpoint.
+        var client = _fixture.CreateClient();
+        await client.PostAsJsonAsync("/api/accounts/register", new RegisterRequest(
+            Email: "accounts-logout@example.com", Password: "Password123!", DisplayName: "Logout One"));
+
+        var logoutResponse = await client.PostAsync("/api/accounts/logout", null);
+
+        Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Login_after_logout_sets_a_fresh_cookie_and_reauthenticates()
     {
         var client = _fixture.CreateClient();

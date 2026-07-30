@@ -1,8 +1,8 @@
 namespace BerryExchange.AiCore;
 
-public record ListingDraft(string BerryType, string FarmName, decimal? PricePerPint, int? QuantityAvailable, string? Note);
-public record ComparableListing(string BerryType, string FarmName, decimal PricePerPint, int QuantityAvailable);
-public record ListingCopySuggestion(string ImprovedDescription, decimal SuggestedPricePerPint, string Reasoning);
+public record ListingDraft(string BerryType, string FarmName, decimal? PricePerKg, decimal? QuantityAvailableKg, string? Note);
+public record ComparableListing(string BerryType, string FarmName, decimal PricePerKg, decimal QuantityAvailableKg);
+public record ListingCopySuggestion(string ImprovedDescription, decimal SuggestedPricePerKg, string Reasoning);
 
 public interface IGenerativeAi
 {

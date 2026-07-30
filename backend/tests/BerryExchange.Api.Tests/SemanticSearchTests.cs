@@ -36,7 +36,7 @@ public class SemanticSearchTests : IClassFixture<ApiTestFixture>
         string berry, string farm, string note)
     {
         var created = await (await client.PostAsJsonAsync("/api/listings",
-            new { BerryType = berry, FarmName = farm, PricePerPint = 5m, QuantityAvailable = 5, Note = note }))
+            new { BerryType = berry, FarmName = farm, PricePerKg = 5m, QuantityAvailableKg = 5m, Note = note }))
             .Content.ReadFromJsonAsync<JsonElement>();
         var id = created.GetProperty("id").GetGuid();
         var request = new HttpRequestMessage(HttpMethod.Post, $"/api/internal/listings/{id}/enrichment")

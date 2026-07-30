@@ -1,15 +1,23 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCurrentUser, CURRENT_USER_QUERY_KEY } from '../features/auth/useCurrentUser';
+import { useCurrentUser } from '../features/auth/useCurrentUser';
 import { logout } from '../api/accounts';
+import { useToast } from './ToastProvider';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const { data: user } = useCurrentUser();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
+      queryClient.clear();
+      navigate('/market');
+    },
+    onError: () => {
+      showToast('Log out failed — try again.');
     },
   });
 
@@ -23,23 +31,26 @@ export function Header() {
         <Link to="/sell">Sell Berries</Link>
         <Link to="/reservations">My Reservations</Link>
       </nav>
-      {user ? (
-        <div className="auth-status">
-          <span>{user.displayName}</span>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
-          >
-            Log out
-          </button>
-        </div>
-      ) : (
-        <Link to="/login" className="btn btn-ghost">
-          Log in
-        </Link>
-      )}
+      <div className="auth-status">
+        <ThemeToggle />
+        {user ? (
+          <>
+            <span>{user.displayName}</span>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+            >
+              Log out
+            </button>
+          </>
+        ) : (
+          <Link to="/login" className="btn btn-ghost">
+            Log in
+          </Link>
+        )}
+      </div>
     </header>
   );
 }

@@ -23,7 +23,7 @@ public class InternalEnrichmentTests : IClassFixture<ApiTestFixture>
         (await client.PostAsJsonAsync("/api/accounts/register",
             new { Email = email, Password = "Password1!", DisplayName = "G" })).EnsureSuccessStatusCode();
         var created = await (await client.PostAsJsonAsync("/api/listings",
-            new { BerryType = "Currant", FarmName = "Brook Farm", PricePerPint = 3.5m, QuantityAvailable = 5, Note = (string?)null }))
+            new { BerryType = "Currant", FarmName = "Brook Farm", PricePerKg = 3.5m, QuantityAvailableKg = 5m, Note = (string?)null }))
             .Content.ReadFromJsonAsync<ListingResponseDto>();
 
         using var embedder = new LocalTextEmbedder();

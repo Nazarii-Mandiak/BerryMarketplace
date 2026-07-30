@@ -35,7 +35,11 @@ public class ListingsService
 
     public async Task<List<Listing>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct)
     {
-        return await _db.Listings.Where(l => ids.Contains(l.Id)).ToListAsync(ct);
+        // IgnoreQueryFilters: this backs /api/reservations/mine, which must still show a
+        // buyer's past reservation details even after the seller has deleted the listing -
+        // the only caller of this method, so the exception lives here rather than at each
+        // call site.
+        return await _db.Listings.IgnoreQueryFilters().Where(l => ids.Contains(l.Id)).ToListAsync(ct);
     }
 
     public async Task<Listing> CreateAsync(Guid sellerId, CreateListingRequest request, CancellationToken ct)
@@ -46,8 +50,8 @@ public class ListingsService
             SellerId = sellerId,
             BerryType = request.BerryType,
             FarmName = request.FarmName,
-            PricePerPint = request.PricePerPint,
-            QuantityAvailable = request.QuantityAvailable,
+            PricePerKg = request.PricePerKg,
+            QuantityAvailableKg = request.QuantityAvailableKg,
             Note = request.Note,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -61,7 +65,7 @@ public class ListingsService
         {
             await _events.PublishAsync(ListingCreatedEvent.RoutingKey, new ListingCreatedEvent(
                 listing.Id, listing.SellerId, listing.BerryType, listing.FarmName,
-                listing.PricePerPint, listing.QuantityAvailable, listing.Note, listing.CreatedAt), ct);
+                listing.PricePerKg, listing.QuantityAvailableKg, listing.Note, listing.CreatedAt), ct);
         }
         catch (Exception ex)
         {
@@ -69,6 +73,46 @@ public class ListingsService
         }
 
         return listing;
+    }
+
+    public async Task<Listing> UpdateAsync(Listing listing, UpdateListingRequest request, CancellationToken ct)
+    {
+        listing.BerryType = request.BerryType;
+        listing.FarmName = request.FarmName;
+        listing.PricePerKg = request.PricePerKg;
+        listing.QuantityAvailableKg = request.QuantityAvailableKg;
+        listing.Note = request.Note;
+
+        // Editing the fields the embedding/tasting note were derived from makes them stale
+        // immediately - clear them rather than leave a wrong-but-plausible note showing
+        // until the async worker catches up (a moment with no note reads better than a
+        // moment with the wrong one).
+        listing.Embedding = null;
+        listing.AiTastingNotes = null;
+        await _db.SaveChangesAsync(ct);
+
+        // Republish the existing ListingCreatedEvent rather than inventing a
+        // listing.updated contract: the AI worker's handler already just recomputes the
+        // embedding/tasting note and PUTs enrichment back (InternalEnrichmentEndpoints is a
+        // plain overwrite), so it's idempotent and this reuses the whole pipeline for free.
+        try
+        {
+            await _events.PublishAsync(ListingCreatedEvent.RoutingKey, new ListingCreatedEvent(
+                listing.Id, listing.SellerId, listing.BerryType, listing.FarmName,
+                listing.PricePerKg, listing.QuantityAvailableKg, listing.Note, listing.CreatedAt), ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish ListingCreatedEvent for listing {ListingId} update", listing.Id);
+        }
+
+        return listing;
+    }
+
+    public async Task SoftDeleteAsync(Listing listing, CancellationToken ct)
+    {
+        listing.DeletedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync(ct);
     }
 
     public async Task<(string Mode, List<Listing> Results)> SearchAsync(string query, int limit, CancellationToken ct)

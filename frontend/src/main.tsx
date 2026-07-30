@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { App } from './App';
 import { ToastProvider } from './components/ToastProvider';
+import { ThemeProvider } from './components/ThemeProvider';
 import './styles/global.css';
 
 const queryClient = new QueryClient();
@@ -13,9 +14,11 @@ const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const app = (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <ToastProvider>
-        <App />
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );

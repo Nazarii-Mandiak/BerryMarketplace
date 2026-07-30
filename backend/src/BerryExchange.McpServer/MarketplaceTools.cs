@@ -17,17 +17,18 @@ public static class MarketplaceTools
         [Description("The listing GUID")] Guid listingId, CancellationToken ct) =>
         api.GetListingAsync(listingId, ct);
 
-    [McpServerTool, Description("Check how many pints remain for a listing.")]
+    [McpServerTool, Description("Check how many kilograms remain for a listing.")]
     public static async Task<string> CheckAvailability(MarketplaceApiClient api,
         [Description("The listing GUID")] Guid listingId, CancellationToken ct)
     {
         var json = await api.GetListingAsync(listingId, ct);
         using var doc = JsonDocument.Parse(json);
-        return $"{doc.RootElement.GetProperty("quantityAvailable").GetInt32()} pint(s) available.";
+        return $"{doc.RootElement.GetProperty("quantityAvailableKg").GetDecimal()} kg available.";
     }
 
-    [McpServerTool, Description("Reserve one pint of a listing for the configured marketplace account. Ask the human for explicit confirmation before calling this.")]
+    [McpServerTool, Description("Reserve a given weight in kilograms of a listing for the configured marketplace account. Ask the human for explicit confirmation before calling this.")]
     public static Task<string> CreateReservation(MarketplaceApiClient api,
-        [Description("The listing GUID")] Guid listingId, CancellationToken ct) =>
-        api.CreateReservationAsync(listingId, ct);
+        [Description("The listing GUID")] Guid listingId,
+        [Description("How many kilograms to reserve")] decimal quantityKg, CancellationToken ct) =>
+        api.CreateReservationAsync(listingId, quantityKg, ct);
 }

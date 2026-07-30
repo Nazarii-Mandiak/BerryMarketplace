@@ -3,6 +3,7 @@ erDiagram
     USER ||--o{ LISTING : sells
     USER ||--o{ RESERVATION : buys
     LISTING ||--o{ RESERVATION : "reserved via"
+    LISTING ||--o| LISTING_PHOTO : "has"
     USER ||--o{ CHAT_CONVERSATION : starts
     CHAT_CONVERSATION ||--o{ CHAT_MESSAGE : contains
 
@@ -18,18 +19,24 @@ erDiagram
         uuid seller_id FK
         string berry_type
         string farm_name
-        decimal price_per_pint
-        int quantity_available
+        decimal price_per_kg
+        decimal quantity_available_kg
         string note
         timestamptz created_at
         vector(384) embedding
         string ai_tasting_notes
+        string photo_content_type
+        timestamptz deleted_at "soft delete; null = live"
+    }
+    LISTING_PHOTO {
+        uuid listing_id PK_FK
+        bytea bytes
     }
     RESERVATION {
         uuid id PK
         uuid listing_id FK
         uuid buyer_id FK
-        int quantity
+        decimal quantity_kg
         string status
         timestamptz reserved_at
     }

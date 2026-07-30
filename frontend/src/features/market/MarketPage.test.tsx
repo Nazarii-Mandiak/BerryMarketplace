@@ -14,13 +14,13 @@ vi.mock('../../api/accounts');
 const listings: ListingResponse[] = [
   {
     id: 'l1', sellerId: 'seller-1', berryType: 'Strawberries', farmName: 'Sunrow Farm',
-    pricePerPint: 6.4, quantityAvailable: 3, note: null, createdAt: new Date().toISOString(),
-    aiTastingNotes: null,
+    pricePerKg: 6.4, quantityAvailableKg: 3, note: null, createdAt: new Date().toISOString(),
+    aiTastingNotes: null, hasPhoto: false,
   },
   {
     id: 'l2', sellerId: 'seller-2', berryType: 'Blueberries', farmName: 'Blue Hollow Orchard',
-    pricePerPint: 5.2, quantityAvailable: 0, note: null, createdAt: new Date().toISOString(),
-    aiTastingNotes: null,
+    pricePerKg: 5.2, quantityAvailableKg: 0, note: null, createdAt: new Date().toISOString(),
+    aiTastingNotes: null, hasPhoto: false,
   },
 ];
 
@@ -57,7 +57,7 @@ describe('MarketPage', () => {
     vi.mocked(listingsApi.getListings).mockResolvedValue(listings);
     // A same-tick rejection (mockRejectedValue) settles in the same microtask flush as the
     // optimistic onMutate update, so React 19 batches both into a single commit and the
-    // intermediate "2 pts left" state is never actually painted. A small real delay gives
+    // intermediate "2.5 kg left" state is never actually painted. A small real delay gives
     // the optimistic render its own commit before the rollback, which is what this test
     // is meant to observe.
     vi.mocked(listingsApi.reserveListing).mockImplementation(
@@ -70,10 +70,11 @@ describe('MarketPage', () => {
     const strawberryCard = (await screen.findByRole('heading', { name: 'Strawberries' })).closest(
       '.card',
     ) as HTMLElement;
-    await user.click(within(strawberryCard).getByRole('button', { name: 'Buy a pint' }));
+    // Default picker quantity is 0.5 kg (see MarketPage's quantityFor).
+    await user.click(within(strawberryCard).getByRole('button', { name: 'Buy 0.50 kg' }));
 
-    await waitFor(() => expect(within(strawberryCard).getByText('2 pts left')).toBeInTheDocument());
-    await waitFor(() => expect(within(strawberryCard).getByText('3 pts left')).toBeInTheDocument());
+    await waitFor(() => expect(within(strawberryCard).getByText('2.5 kg left')).toBeInTheDocument());
+    await waitFor(() => expect(within(strawberryCard).getByText('3 kg left')).toBeInTheDocument());
     expect(await screen.findByText('Sold out.')).toBeInTheDocument();
   });
 
@@ -84,8 +85,8 @@ describe('MarketPage', () => {
       results: [
         {
           id: 'l3', sellerId: 'seller-3', berryType: 'Strawberry', farmName: 'Sweet Fields',
-          pricePerPint: 7.0, quantityAvailable: 4, note: null, createdAt: new Date().toISOString(),
-          aiTastingNotes: 'Candy-sweet.',
+          pricePerKg: 7.0, quantityAvailableKg: 4, note: null, createdAt: new Date().toISOString(),
+          aiTastingNotes: 'Candy-sweet.', hasPhoto: false,
         },
       ],
     });

@@ -50,7 +50,7 @@ public sealed class ChatToolExecutor : IChatToolExecutor
         var payload = results.Select(l => new
         {
             id = l.Id, berryType = l.BerryType, farmName = l.FarmName,
-            pricePerPint = l.PricePerPint, quantityAvailable = l.QuantityAvailable,
+            pricePerKg = l.PricePerKg, quantityAvailableKg = l.QuantityAvailableKg,
             aiTastingNotes = l.AiTastingNotes,
         });
         return (JsonSerializer.Serialize(new { mode, results = payload }, JsonOptions), false);
@@ -69,7 +69,7 @@ public sealed class ChatToolExecutor : IChatToolExecutor
         var listing = await _listings.GetByIdAsync(ParseId(input), ct);
         return listing is null
             ? ("No listing with that id.", true)
-            : ($"{listing.QuantityAvailable} pint(s) available.", false);
+            : ($"{listing.QuantityAvailableKg} kg available.", false);
     }
 
     private async Task<(string, bool)> CreateReservationAsync(Guid userId, JsonElement input, CancellationToken ct)
@@ -78,10 +78,14 @@ public sealed class ChatToolExecutor : IChatToolExecutor
         {
             return ("The user has not confirmed this reservation. Ask them to confirm the exact listing first.", true);
         }
-        var result = await _reservations.ReserveAsync(ParseId(input), userId, ct);
+        if (!input.TryGetProperty("quantity_kg", out var quantityElement) || !quantityElement.TryGetDecimal(out var quantityKg) || quantityKg <= 0)
+        {
+            return ("quantity_kg must be a positive number.", true);
+        }
+        var result = await _reservations.ReserveAsync(ParseId(input), userId, quantityKg, ct);
         return result.Outcome switch
         {
-            ReserveOutcome.Success => ($"Reserved one pint. Reservation id: {result.Reservation!.Id}.", false),
+            ReserveOutcome.Success => ($"Reserved {quantityKg} kg. Reservation id: {result.Reservation!.Id}.", false),
             ReserveOutcome.NotFound => ("No listing with that id.", true),
             ReserveOutcome.OwnListing => ("You cannot reserve your own listing.", true),
             _ => ("This listing is sold out.", true),

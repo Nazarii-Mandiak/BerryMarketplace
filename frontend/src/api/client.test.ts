@@ -44,4 +44,12 @@ describe('apiRequest', () => {
 
     expect(result).toBeUndefined();
   });
+
+  it('returns undefined for a 200 response with an empty body', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 200 })));
+
+    const result = await apiRequest('/accounts/logout', { method: 'POST' });
+
+    expect(result).toBeUndefined();
+  });
 });

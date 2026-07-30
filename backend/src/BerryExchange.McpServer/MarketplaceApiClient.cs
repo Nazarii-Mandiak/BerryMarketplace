@@ -24,7 +24,7 @@ public sealed class MarketplaceApiClient
     public Task<string> GetListingAsync(Guid listingId, CancellationToken ct) =>
         _http.GetStringAsync($"/api/listings/{listingId}", ct);
 
-    public async Task<string> CreateReservationAsync(Guid listingId, CancellationToken ct)
+    public async Task<string> CreateReservationAsync(Guid listingId, decimal quantityKg, CancellationToken ct)
     {
         if (_email is null || _password is null)
         {
@@ -32,10 +32,10 @@ public sealed class MarketplaceApiClient
                  + "(set BerryMcp:Email and BerryMcp:Password).";
         }
         await EnsureLoggedInAsync(ct);
-        var response = await _http.PostAsync($"/api/listings/{listingId}/reservations", content: null, ct);
+        var response = await _http.PostAsJsonAsync($"/api/listings/{listingId}/reservations", new { QuantityKg = quantityKg }, ct);
         if (response.IsSuccessStatusCode)
         {
-            return "Reserved one pint.";
+            return $"Reserved {quantityKg} kg.";
         }
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)

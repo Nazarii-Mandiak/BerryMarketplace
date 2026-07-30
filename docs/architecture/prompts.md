@@ -25,3 +25,7 @@ ER diagram, supplementary (outside strict C4). Three entities: User, Listing, Re
 ## 2026-07-20 — reservation-flow.mmd (created)
 
 Sequence diagram, supplementary. The one correctness-critical flow: atomic conditional `UPDATE` to decrement listing stock, avoiding a read-then-write race between two simultaneous buyers on the last pint.
+
+## 2026-07-30 — context.mmd, data-model.mmd, reservation-flow.mmd (updated)
+
+ADR-0015 switches units from pints to kilograms with free-form fractional quantities. `LISTING.price_per_pint`/`quantity_available` become `price_per_kg`/`quantity_available_kg` (decimal, was int); `RESERVATION.quantity` becomes `quantity_kg` (decimal, was int) — buyers can now request any amount, not just whole pints. The reservation-flow sequence's atomic guard changes from `qty = qty - 1 WHERE qty > 0` to `qty_kg = qty_kg - :quantityKg WHERE qty_kg >= :quantityKg`, taking the requested quantity from the POST body instead of assuming 1. context.mmd's system/actor descriptions drop the "pint" wording accordingly.

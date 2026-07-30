@@ -32,18 +32,18 @@ public class ReservationsServiceTests : IClassFixture<ApiTestFixture>
         var listing = new Listing
         {
             Id = Guid.NewGuid(), SellerId = seller.Id, BerryType = "Blueberry", FarmName = "Direct Farm",
-            PricePerPint = 5m, QuantityAvailable = 3, CreatedAt = DateTimeOffset.UtcNow,
+            PricePerKg = 5m, QuantityAvailableKg = 3, CreatedAt = DateTimeOffset.UtcNow,
         };
         db.Listings.Add(listing);
         await db.SaveChangesAsync();
 
-        var result = await reservationsService.ReserveAsync(listing.Id, seller.Id, CancellationToken.None);
+        var result = await reservationsService.ReserveAsync(listing.Id, seller.Id, 1m, CancellationToken.None);
 
         Assert.False(result.Succeeded);
         Assert.Equal(ReserveOutcome.OwnListing, result.Outcome);
 
         db.ChangeTracker.Clear();
-        Assert.Equal(3, (await db.Listings.FindAsync(listing.Id))!.QuantityAvailable);
+        Assert.Equal(3m, (await db.Listings.FindAsync(listing.Id))!.QuantityAvailableKg);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class ReservationsServiceTests : IClassFixture<ApiTestFixture>
         using var scope = _fixture.Services.CreateScope();
         var reservationsService = scope.ServiceProvider.GetRequiredService<ReservationsService>();
 
-        var result = await reservationsService.ReserveAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
+        var result = await reservationsService.ReserveAsync(Guid.NewGuid(), Guid.NewGuid(), 1m, CancellationToken.None);
 
         Assert.False(result.Succeeded);
         Assert.Equal(ReserveOutcome.NotFound, result.Outcome);

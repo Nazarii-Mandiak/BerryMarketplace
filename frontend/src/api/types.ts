@@ -9,11 +9,12 @@ export interface ListingResponse {
   sellerId: string;
   berryType: string;
   farmName: string;
-  pricePerPint: number;
-  quantityAvailable: number;
+  pricePerKg: number;
+  quantityAvailableKg: number;
   note: string | null;
   createdAt: string;
   aiTastingNotes: string | null;
+  hasPhoto: boolean;
 }
 
 export type SearchMode = 'semantic' | 'keyword';
@@ -26,19 +27,27 @@ export interface SearchListingsResponse {
 export interface ReservationWithListingResponse {
   id: string;
   listingId: string;
-  quantity: number;
+  quantityKg: number;
   status: string;
   reservedAt: string;
   berryType: string;
   farmName: string;
-  pricePerPint: number;
+  pricePerKg: number;
 }
 
 export interface CreateListingRequest {
   berryType: string;
   farmName: string;
-  pricePerPint: number;
-  quantityAvailable: number;
+  pricePerKg: number;
+  quantityAvailableKg: number;
+  note: string | null;
+}
+
+export interface UpdateListingRequest {
+  berryType: string;
+  farmName: string;
+  pricePerKg: number;
+  quantityAvailableKg: number;
   note: string | null;
 }
 
@@ -64,14 +73,14 @@ export interface AiStatus {
 export interface ListingDraft {
   berryType: string;
   farmName: string;
-  pricePerPint: number | null;
-  quantityAvailable: number | null;
+  pricePerKg: number | null;
+  quantityAvailableKg: number | null;
   note: string | null;
 }
 
 export interface ListingCopySuggestion {
   improvedDescription: string;
-  suggestedPricePerPint: number;
+  suggestedPricePerKg: number;
   reasoning: string;
 }
 

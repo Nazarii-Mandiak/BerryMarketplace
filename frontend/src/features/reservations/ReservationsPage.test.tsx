@@ -19,8 +19,8 @@ describe('ReservationsPage', () => {
   it('lists reservations with their listing details', async () => {
     vi.mocked(reservationsApi.getMyReservations).mockResolvedValue([
       {
-        id: 'r1', listingId: 'l1', quantity: 1, status: 'Pending', reservedAt: '2026-07-20T12:00:00Z',
-        berryType: 'Gooseberries', farmName: 'Old Stone Orchard', pricePerPint: 8.5,
+        id: 'r1', listingId: 'l1', quantityKg: 1, status: 'Pending', reservedAt: '2026-07-20T12:00:00Z',
+        berryType: 'Gooseberries', farmName: 'Old Stone Orchard', pricePerKg: 8.5,
       },
     ]);
 
@@ -29,5 +29,6 @@ describe('ReservationsPage', () => {
     expect(await screen.findByText('Gooseberries')).toBeInTheDocument();
     expect(screen.getByText('Old Stone Orchard')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByText(/1 kg/)).toBeInTheDocument();
   });
 });

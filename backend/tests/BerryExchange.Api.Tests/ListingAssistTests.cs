@@ -21,7 +21,7 @@ public class ListingAssistTests : IClassFixture<ApiTestFixture>
             IReadOnlyList<ComparableListing> comparables, CancellationToken ct)
         {
             SeenComparables = comparables;
-            return Task.FromResult<ListingCopySuggestion?>(new("Juicy, jam-ready pints", 6.0m, "Priced with the market"));
+            return Task.FromResult<ListingCopySuggestion?>(new("Juicy, jam-ready berries", 6.0m, "Priced with the market"));
         }
         public Task<string?> GenerateTastingNotesAsync(string berryType, string farmName, string? note, CancellationToken ct) =>
             Task.FromResult<string?>(null);
@@ -33,7 +33,7 @@ public class ListingAssistTests : IClassFixture<ApiTestFixture>
         var client = _fixture.CreateClient();
         await RegisterAsync(client);
         var response = await client.PostAsJsonAsync("/api/ai/listing-assist",
-            new { BerryType = "Strawberry", FarmName = "F", PricePerPint = (decimal?)null, QuantityAvailable = (int?)null, Note = (string?)null });
+            new { BerryType = "Strawberry", FarmName = "F", PricePerKg = (decimal?)null, QuantityAvailableKg = (decimal?)null, Note = (string?)null });
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
     }
 
@@ -56,14 +56,14 @@ public class ListingAssistTests : IClassFixture<ApiTestFixture>
         })).CreateClient();
         await RegisterAsync(client);
         (await client.PostAsJsonAsync("/api/listings",
-            new { BerryType = "Strawberry", FarmName = "Comparable Farm", PricePerPint = 5.5m, QuantityAvailable = 3, Note = (string?)null }))
+            new { BerryType = "Strawberry", FarmName = "Comparable Farm", PricePerKg = 5.5m, QuantityAvailableKg = 3m, Note = (string?)null }))
             .EnsureSuccessStatusCode();
 
         var response = await client.PostAsJsonAsync("/api/ai/listing-assist",
-            new { BerryType = "Strawberry", FarmName = "My Farm", PricePerPint = (decimal?)null, QuantityAvailable = 4, Note = "sweet" });
+            new { BerryType = "Strawberry", FarmName = "My Farm", PricePerKg = (decimal?)null, QuantityAvailableKg = 4m, Note = "sweet" });
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("Juicy, jam-ready pints", body.GetProperty("improvedDescription").GetString());
+        Assert.Equal("Juicy, jam-ready berries", body.GetProperty("improvedDescription").GetString());
         Assert.NotNull(fake.SeenComparables);
         Assert.Contains(fake.SeenComparables!, c => c.FarmName == "Comparable Farm");
     }

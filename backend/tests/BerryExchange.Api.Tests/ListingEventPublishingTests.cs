@@ -39,13 +39,13 @@ public class ListingEventPublishingTests : IClassFixture<ApiTestFixture>
         register.EnsureSuccessStatusCode();
 
         var create = await client.PostAsJsonAsync("/api/listings",
-            new { BerryType = "Strawberry", FarmName = "Sunny Acres", PricePerPint = 6.5m, QuantityAvailable = 10, Note = "sweet" });
+            new { BerryType = "Strawberry", FarmName = "Sunny Acres", PricePerKg = 6.5m, QuantityAvailableKg = 10m, Note = "sweet" });
         create.EnsureSuccessStatusCode();
 
         var (routingKey, evt) = Assert.Single(recorder.Published);
         Assert.Equal(ListingCreatedEvent.RoutingKey, routingKey);
         var typed = Assert.IsType<ListingCreatedEvent>(evt);
         Assert.Equal("Strawberry", typed.BerryType);
-        Assert.Equal(10, typed.QuantityAvailable);
+        Assert.Equal(10, typed.QuantityAvailableKg);
     }
 }
