@@ -26,6 +26,7 @@ erDiagram
         vector(384) embedding
         string ai_tasting_notes
         string photo_content_type
+        timestamptz deleted_at "soft delete; null = live"
     }
     LISTING_PHOTO {
         uuid listing_id PK_FK

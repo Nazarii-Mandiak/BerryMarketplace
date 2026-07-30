@@ -43,7 +43,8 @@ public static class ListingsEndpoints
                 Note = request.Note?.Trim()
             };
 
-            var errors = ValidateCreateRequest(normalized);
+            var errors = ValidateListingFields(normalized.BerryType, normalized.FarmName,
+                normalized.PricePerKg, normalized.QuantityAvailableKg, normalized.Note);
             if (errors.Count > 0)
             {
                 return Results.BadRequest(new { errors });
@@ -53,57 +54,110 @@ public static class ListingsEndpoints
             var listing = await service.CreateAsync(sellerId, normalized, ct);
             return Results.Created($"/api/listings/{listing.Id}", ListingResponse.FromEntity(listing));
         }).RequireAuthorization();
+
+        group.MapPut("/{id:guid}", async (Guid id, UpdateListingRequest request, HttpContext http, ListingsService service, CancellationToken ct) =>
+        {
+            var normalized = request with
+            {
+                BerryType = request.BerryType?.Trim() ?? string.Empty,
+                FarmName = request.FarmName?.Trim() ?? string.Empty,
+                Note = request.Note?.Trim()
+            };
+
+            var errors = ValidateListingFields(normalized.BerryType, normalized.FarmName,
+                normalized.PricePerKg, normalized.QuantityAvailableKg, normalized.Note);
+            if (errors.Count > 0)
+            {
+                return Results.BadRequest(new { errors });
+            }
+
+            var listing = await service.GetByIdAsync(id, ct);
+            if (listing is null)
+            {
+                return Results.NotFound();
+            }
+
+            var callerId = Guid.Parse(http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            if (listing.SellerId != callerId)
+            {
+                return Results.Json(new { error = "You cannot modify another seller's listing." },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+
+            var updated = await service.UpdateAsync(listing, normalized, ct);
+            return Results.Ok(ListingResponse.FromEntity(updated));
+        }).RequireAuthorization();
+
+        group.MapDelete("/{id:guid}", async (Guid id, HttpContext http, ListingsService service, CancellationToken ct) =>
+        {
+            var listing = await service.GetByIdAsync(id, ct);
+            if (listing is null)
+            {
+                return Results.NotFound();
+            }
+
+            var callerId = Guid.Parse(http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            if (listing.SellerId != callerId)
+            {
+                return Results.Json(new { error = "You cannot modify another seller's listing." },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+
+            await service.SoftDeleteAsync(listing, ct);
+            return Results.NoContent();
+        }).RequireAuthorization();
     }
 
-    private static List<string> ValidateCreateRequest(CreateListingRequest request)
+    private static List<string> ValidateListingFields(
+        string berryType, string farmName, decimal pricePerKg, decimal quantityAvailableKg, string? note)
     {
         var errors = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(request.BerryType))
+        if (string.IsNullOrWhiteSpace(berryType))
         {
             errors.Add("BerryType is required.");
         }
-        else if (request.BerryType.Length > 40)
+        else if (berryType.Length > 40)
         {
             errors.Add("BerryType must be 40 characters or fewer.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.FarmName))
+        if (string.IsNullOrWhiteSpace(farmName))
         {
             errors.Add("FarmName is required.");
         }
-        else if (request.FarmName.Length > 40)
+        else if (farmName.Length > 40)
         {
             errors.Add("FarmName must be 40 characters or fewer.");
         }
 
-        if (request.Note is not null && request.Note.Length > 80)
+        if (note is not null && note.Length > 80)
         {
             errors.Add("Note must be 80 characters or fewer.");
         }
 
-        if (request.PricePerKg <= 0)
+        if (pricePerKg <= 0)
         {
             errors.Add("PricePerKg must be greater than 0.");
         }
-        else if (request.PricePerKg >= 100_000_000)
+        else if (pricePerKg >= 100_000_000)
         {
             // The DB column is numeric(10,2): max ~99,999,999.99. Anything at or above
             // 100,000,000 overflows it and would otherwise throw an unhandled Npgsql
             // exception (500) at SaveChangesAsync instead of a clean 400 here.
             errors.Add("PricePerKg must be less than 100,000,000.");
         }
-        else if (decimal.Round(request.PricePerKg, 2) != request.PricePerKg)
+        else if (decimal.Round(pricePerKg, 2) != pricePerKg)
         {
             // numeric(10,2) would otherwise silently round this instead of rejecting it.
             errors.Add("PricePerKg must have at most 2 decimal places.");
         }
 
-        if (request.QuantityAvailableKg < 0)
+        if (quantityAvailableKg < 0)
         {
             errors.Add("QuantityAvailableKg must be 0 or greater.");
         }
-        else if (decimal.Round(request.QuantityAvailableKg, 2) != request.QuantityAvailableKg)
+        else if (decimal.Round(quantityAvailableKg, 2) != quantityAvailableKg)
         {
             errors.Add("QuantityAvailableKg must have at most 2 decimal places.");
         }

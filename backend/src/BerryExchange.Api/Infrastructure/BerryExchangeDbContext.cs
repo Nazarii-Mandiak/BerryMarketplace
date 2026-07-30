@@ -35,7 +35,15 @@ public class BerryExchangeDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.Property(l => l.PhotoContentType).HasMaxLength(40);
             entity.Property(l => l.Embedding).HasColumnType("vector(384)");
             entity.HasIndex(l => l.Embedding).HasMethod("hnsw").HasOperators("vector_cosine_ops");
+            entity.HasIndex(l => l.DeletedAt);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(l => l.SellerId);
+
+            // Applies to every LINQ query against Listings (market list, search, get-by-id,
+            // FindAsync) with no per-query changes - a soft-deleted listing simply stops
+            // existing everywhere except raw SQL (ReservationsService's atomic UPDATE) and
+            // anywhere that explicitly calls IgnoreQueryFilters() (GetByIdsAsync, so a
+            // buyer's past reservation for a now-deleted listing still resolves).
+            entity.HasQueryFilter(l => l.DeletedAt == null);
         });
 
         builder.Entity<ListingPhoto>(entity =>

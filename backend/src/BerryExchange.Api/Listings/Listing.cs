@@ -15,4 +15,5 @@ public class Listing
     public Vector? Embedding { get; set; }
     public string? AiTastingNotes { get; set; }
     public string? PhotoContentType { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
 }
